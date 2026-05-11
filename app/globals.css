@@ -1,26 +1,116 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --primary: #1d4ed8;
+    --primary-hover: #1e40af;
+    --primary-light: #dbeafe;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-dm-sans), sans-serif;
+    @apply bg-white text-gray-900 antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-dm-sans), sans-serif;
+    @apply font-bold;
+  }
+
+  .font-dm-sans { font-family: var(--font-dm-sans), sans-serif; }
+  .font-malayalam { font-family: var(--font-noto-malayalam), sans-serif; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-medium rounded-lg px-4 py-2 transition-colors duration-200 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg px-4 py-2 transition-colors duration-200 inline-flex items-center gap-2;
+  }
+
+  .btn-danger {
+    @apply bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg px-4 py-2 transition-colors duration-200 inline-flex items-center gap-2;
+  }
+
+  .input-field {
+    @apply w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1d4ed8] focus:border-transparent transition-all duration-200 placeholder-gray-400;
+  }
+
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-tea {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .badge-coffee {
+    @apply bg-amber-100 text-amber-800;
+  }
+
+  .badge-snack {
+    @apply bg-orange-100 text-orange-800;
+  }
+
+  .badge-active {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .badge-inactive {
+    @apply bg-gray-100 text-gray-600;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* Slide-in for drawer */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Loading pulse */
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
 }

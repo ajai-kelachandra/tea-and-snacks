@@ -1,0 +1,82 @@
+[
+  {
+    "id": "mock-1",
+    "name": "Masala Chai",
+    "type": "tea",
+    "description": "Traditional Indian tea with a blend of aromatic spices and milk.",
+    "price": 20,
+    "imageUrl": "https://images.unsplash.com/photo-1594631252845-29fc458695d3?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "all-day"
+  },
+  {
+    "id": "mock-2",
+    "name": "Espresso",
+    "type": "coffee",
+    "description": "Rich, intense, and perfectly extracted double shot of pure coffee.",
+    "price": 40,
+    "imageUrl": "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "morning"
+  },
+  {
+    "id": "mock-3",
+    "name": "Chocolate Chip Cookies",
+    "type": "snack",
+    "description": "Golden, buttery cookies packed with premium dark chocolate chips.",
+    "price": 30,
+    "imageUrl": "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "all-day"
+  },
+  {
+    "id": "mock-4",
+    "name": "Ginger Tea",
+    "type": "tea",
+    "description": "Refreshing tea infused with fresh ginger for a zesty kick.",
+    "price": 25,
+    "imageUrl": "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "all-day"
+  },
+  {
+    "id": "mock-5",
+    "name": "Hot Samosas (2 pcs)",
+    "type": "snack",
+    "description": "Crispy pastry filled with spiced potatoes and peas, served with chutney.",
+    "price": 35,
+    "imageUrl": "https://images.unsplash.com/photo-1601050633647-81a317379321?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "evening"
+  },
+  {
+    "id": "mock-6",
+    "name": "Cappuccino",
+    "type": "coffee",
+    "description": "Espresso with steamed milk and a thick layer of creamy foam.",
+    "price": 50,
+    "imageUrl": "https://images.unsplash.com/photo-1534778101976-62847782c213?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "morning"
+  },
+  {
+    "id": "mock-7",
+    "name": "Banana Chips",
+    "type": "snack",
+    "description": "Crispy, salted Kerala-style banana chips made in coconut oil.",
+    "price": 45,
+    "imageUrl": "https://images.unsplash.com/photo-1614066060161-0422329241f3?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "all-day"
+  },
+  {
+    "id": "mock-8",
+    "name": "Cold Coffee",
+    "type": "coffee",
+    "description": "Chilled blended coffee with a scoop of vanilla ice cream.",
+    "price": 60,
+    "imageUrl": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=400&auto=format&fit=crop",
+    "isActive": true,
+    "timeSlot": "evening"
+  }
+]
