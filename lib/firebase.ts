@@ -13,10 +13,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const isConfigValid = !!firebaseConfig.apiKey;
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-export const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
+const app = getApps().length 
+  ? getApp() 
+  : (isConfigValid ? initializeApp(firebaseConfig) : null);
+
+export const auth = app ? getAuth(app) : ({} as any);
+export const db = app ? getFirestore(app) : ({} as any);
+export const storage = app ? getStorage(app) : ({} as any);
+export const messaging = typeof window !== "undefined" && app ? getMessaging(app) : null;
+
 export default app;
