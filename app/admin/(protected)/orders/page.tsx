@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { fetchOrders, updateOrderStatus, OrderStatus } from "@/features/ordersSlice";
+import { fetchOrders, updateOrderStatus, OrderStatus, setOrders, Order } from "@/features/ordersSlice";
 import Badge from "@/components/ui/Badge";
 import { FiSearch, FiFilter, FiClipboard, FiMessageCircle } from "react-icons/fi";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
 const STATUS_OPTIONS: OrderStatus[] = ["placed", "prepared", "cancelled"];
 
@@ -22,7 +24,18 @@ export default function AdminOrdersPage() {
   const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchOrders());
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      })) as Order[];
+      dispatch(setOrders(ordersData));
+    });
+
+    return () => unsub();
   }, [dispatch]);
 
   const filtered = orders.filter((order) => {

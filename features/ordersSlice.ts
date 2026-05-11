@@ -116,7 +116,12 @@ export const updateOrderStatus = createAsyncThunk(
 const ordersSlice = createSlice({
   name: "orders",
   initialState,
-  reducers: {},
+  reducers: {
+    setOrders: (state, action) => {
+      state.orders = action.payload;
+      state.loading = false;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchOrders.pending, (state) => {
@@ -141,5 +146,7 @@ const ordersSlice = createSlice({
       });
   },
 });
+
+export const { setOrders } = ordersSlice.actions;
 
 export default ordersSlice.reducer;

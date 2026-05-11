@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchItems } from "@/features/itemsSlice";
-import { fetchOrders } from "@/features/ordersSlice";
+import { fetchOrders, setOrders, Order } from "@/features/ordersSlice";
 import Link from "next/link";
 import {
   FiPlusCircle,
@@ -17,7 +17,7 @@ import {
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp, onSnapshot, getDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, onSnapshot, getDoc, collection, query, orderBy } from "firebase/firestore";
 
 export default function AdminDashboardPage() {
   const dispatch = useAppDispatch();
@@ -34,16 +34,30 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     dispatch(fetchItems());
-    dispatch(fetchOrders());
+    
+    // Real-time orders listener
+    const ordersQuery = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
+      const ordersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      })) as Order[];
+      dispatch(setOrders(ordersData));
+    });
 
     // Listen to ordering status
-    const unsub = onSnapshot(doc(db, "settings", "ordering"), (doc) => {
+    const unsubOrdering = onSnapshot(doc(db, "settings", "ordering"), (doc) => {
       if (doc.exists()) {
         setIsOrderingEnabled(doc.data().isEnabled);
       }
     });
 
-    return () => unsub();
+    return () => {
+      unsubOrders();
+      unsubOrdering();
+    };
   }, [dispatch]);
 
   const toggleOrdering = async () => {
