@@ -52,7 +52,8 @@ export default function PushNotificationManager() {
           
           console.log(`Checking notification: sent=${sentTime}, lastSeen=${lastSeen}, diff=${now - sentTime}`);
 
-          if (Math.abs(now - sentTime) < 300000 && sentTime > lastSeen) {
+          // Show toast if notification is less than 24 hours old and hasn't been seen yet
+          if (now - sentTime < 86400000 && sentTime > lastSeen) {
             lastProcessedTime.current = sentTime;
             localStorage.setItem('lastSeenNotificationTime', sentTime.toString());
 

@@ -85,6 +85,19 @@ export default function AdminDashboardPage() {
         body: notifyMessage,
         timestamp: serverTimestamp(),
       });
+
+      // Send REAL Push Notification via our new API
+      try {
+        await fetch("/api/broadcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: notifyTitle, body: notifyMessage }),
+        });
+      } catch (pushErr) {
+        console.error("FCM API call failed:", pushErr);
+        // We don't block the UI for this, as the Firestore update succeeded
+      }
+
       toast.success("Notification broadcasted successfully!");
       setNotifyMessage("");
       setIsNotifyModalOpen(false);
