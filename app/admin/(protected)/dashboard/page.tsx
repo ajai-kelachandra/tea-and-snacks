@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboardss</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboar</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             Hello, {userName?.split("@")[0] || "Admin"}! Here's an overview of today's activity.
           </p>
