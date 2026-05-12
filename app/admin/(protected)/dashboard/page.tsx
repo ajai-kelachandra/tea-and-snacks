@@ -13,6 +13,7 @@ import {
   FiCheckCircle,
   FiActivity,
   FiMessageCircle,
+  FiClock,
 } from "react-icons/fi";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
@@ -26,9 +27,14 @@ export default function AdminDashboardPage() {
   const { userName } = useAppSelector((s) => s.auth);
 
   const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
-  const [notifyTitle, setNotifyTitle] = useState("Iro Snacks 🥨");
-  const [notifyMessage, setNotifyMessage] = useState("");
+  const [notifyTitle, setNotifyTitle] = useState("Tea & Snack Time! ☕");
+  const [notifyMessage, setNotifyMessage] = useState("Fresh tea and snacks are ready at the counter. Come and get yours!");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  
+  const [timerMinutes, setTimerMinutes] = useState("30");
+  const [isTimerActive, setIsTimerActive] = useState(false);
+  const [timerEndAt, setTimerEndAt] = useState<any>(null);
+
   const [isOrderingEnabled, setIsOrderingEnabled] = useState(true);
   const [isUpdatingEnabled, setIsUpdatingEnabled] = useState(false);
 
@@ -54,11 +60,41 @@ export default function AdminDashboardPage() {
       }
     });
 
+    const unsubTimer = onSnapshot(doc(db, "settings", "timer"), (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        setIsTimerActive(data.isActive);
+        setTimerEndAt(data.endAt);
+      }
+    });
+
     return () => {
       unsubOrders();
       unsubOrdering();
+      unsubTimer();
     };
   }, [dispatch]);
+
+  const handleStartTimer = async () => {
+    const mins = parseInt(timerMinutes);
+    if (isNaN(mins) || mins <= 0) return;
+
+    const endAt = Date.now() + (mins * 60000);
+    await setDoc(doc(db, "settings", "timer"), {
+      isActive: true,
+      endAt: endAt,
+      startedAt: serverTimestamp()
+    });
+    toast.success(`Timer started for ${mins} minutes!`);
+  };
+
+  const handleStopTimer = async () => {
+    await setDoc(doc(db, "settings", "timer"), {
+      isActive: false,
+      endAt: null
+    });
+    toast.success("Timer stopped.");
+  };
 
   const toggleOrdering = async () => {
     setIsUpdatingEnabled(true);
@@ -77,7 +113,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleBroadcast = async () => {
-    if (!notifyTitle.trim() || !notifyMessage.trim()) return;
+    if (!notifyMessage.trim()) return;
     setIsBroadcasting(true);
     try {
       await setDoc(doc(db, "globalNotifications", "current"), {
@@ -86,16 +122,22 @@ export default function AdminDashboardPage() {
         timestamp: serverTimestamp(),
       });
 
-      // Send REAL Push Notification via our new API
       try {
-        await fetch("/api/broadcast", {
+        const res = await fetch("/api/broadcast", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: notifyTitle, body: notifyMessage }),
         });
+        
+        const result = await res.json();
+        if (result.success) {
+          toast.success(`Broadcasted! Reached ${result.sentCount} devices.`, {
+            icon: '🚀',
+            duration: 5000
+          });
+        }
       } catch (pushErr) {
         console.error("FCM API call failed:", pushErr);
-        // We don't block the UI for this, as the Firestore update succeeded
       }
 
       toast.success("Notification broadcasted successfully!");
@@ -117,7 +159,6 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    // Aggregate counts for all items across all pending orders
     const summary: Record<string, number> = {};
     pendingOrders.forEach(order => {
       order.items.forEach(item => {
@@ -148,34 +189,10 @@ export default function AdminDashboardPage() {
   const snacks = items.filter((i) => i.type === "snack").length;
 
   const stats = [
-    {
-      label: "Total Items",
-      value: items.length,
-      icon: FiPackage,
-      color: "bg-blue-50 text-[#1d4ed8]",
-      description: `${activeItems} active`,
-    },
-    {
-      label: "Total Orders",
-      value: totalOrders,
-      icon: FiClipboard,
-      color: "bg-purple-50 text-purple-700",
-      description: `${placedOrders} pending`,
-    },
-    {
-      label: "Active Items",
-      value: activeItems,
-      icon: FiCheckCircle,
-      color: "bg-green-50 text-green-700",
-      description: "currently available",
-    },
-    {
-      label: "Categories",
-      value: 3,
-      icon: FiActivity,
-      color: "bg-amber-50 text-amber-700",
-      description: `${teas} tea · ${coffees} coffee · ${snacks} snack`,
-    },
+    { label: "Total Items", value: items.length, icon: FiPackage, color: "bg-blue-50 text-[#1d4ed8]", description: `${activeItems} active` },
+    { label: "Total Orders", value: totalOrders, icon: FiClipboard, color: "bg-purple-50 text-purple-700", description: `${placedOrders} pending` },
+    { label: "Active Items", value: activeItems, icon: FiCheckCircle, color: "bg-green-50 text-green-700", description: "currently available" },
+    { label: "Categories", value: 3, icon: FiActivity, color: "bg-amber-50 text-amber-700", description: `${teas} tea · ${coffees} coffee · ${snacks} snack` },
   ];
 
   const quickLinks = [
@@ -206,23 +223,12 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Hello, {userName?.split("@")[0] || "Admin"}! Here's an overview of today's activity.
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">Hello, {userName?.split("@")[0] || "Admin"}!</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsNotifyModalOpen(true)}
-            className="flex items-center gap-2 bg-[#1d4ed8] text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#1e40af] transition-all active:scale-95 shadow-lg shadow-blue-100"
-          >
-            <FiMessageCircle size={14} />
-            Notify People
-          </button>
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ordering</span>
               <span className={`text-[10px] font-bold uppercase tracking-tight ${isOrderingEnabled ? "text-green-600" : "text-red-600"}`}>
@@ -232,50 +238,80 @@ export default function AdminDashboardPage() {
             <button
               onClick={toggleOrdering}
               disabled={isUpdatingEnabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                isOrderingEnabled ? "bg-green-500" : "bg-gray-200"
-              } ${isUpdatingEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isOrderingEnabled ? "bg-green-500" : "bg-gray-200"}`}
             >
-              <span
-                className={`${
-                  isOrderingEnabled ? "translate-x-6" : "translate-x-1"
-                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-              />
+              <span className={`${isOrderingEnabled ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
             </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+              <FiMessageCircle size={24} />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900">Broadcast Alert</h3>
+              <p className="text-xs text-gray-500 font-medium">Send push notification to all</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsNotifyModalOpen(true)}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            Open Notify Panel
+          </button>
+        </div>
+
+        <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+          <div className="flex items-center gap-4 mb-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isTimerActive ? 'bg-orange-50 text-orange-600 animate-pulse' : 'bg-gray-50 text-gray-400'}`}>
+              <FiClock size={24} />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900">Ordering Timer</h3>
+              <p className="text-xs text-gray-500 font-medium">
+                {isTimerActive ? "Countdown in progress" : "Set ordering deadline"}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            {!isTimerActive ? (
+              <>
+                <input 
+                  type="number"
+                  value={timerMinutes}
+                  onChange={(e) => setTimerMinutes(e.target.value)}
+                  className="w-20 bg-gray-50 border border-gray-100 rounded-xl px-3 text-sm font-bold outline-none focus:border-blue-200"
+                  placeholder="Mins"
+                />
+                <button
+                  onClick={handleStartTimer}
+                  className="flex-1 py-3 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                >
+                  Start Timer
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleStopTimer}
+                className="w-full py-3 bg-red-50 text-red-600 border border-red-100 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+              >
+                Stop Timer
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Notify Modal */}
       {isNotifyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => !isBroadcasting && setIsNotifyModalOpen(false)}
-          />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 animate-slideUp">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#1d4ed8]">
-                <FiMessageCircle size={20} />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Broadcast Message</h3>
-                <p className="text-xs text-gray-500">This will notify all active users</p>
-              </div>
-            </div>
-            
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsNotifyModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
+            <h3 className="font-bold text-gray-900 mb-4">Broadcast Message</h3>
             <div className="space-y-4 mb-6">
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 mb-1.5 block">Title</label>
-                <input
-                  type="text"
-                  value={notifyTitle}
-                  onChange={(e) => setNotifyTitle(e.target.value)}
-                  placeholder="Notification Title"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400"
-                  disabled={isBroadcasting}
-                />
-              </div>
 
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 mb-1.5 block">Message</label>

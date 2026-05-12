@@ -28,6 +28,15 @@ export default function PushNotificationManager() {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator && messaging) {
       handleTokenRequest();
     }
+
+    // Listen for manual requests (from the button click)
+    const handleManualRequest = () => {
+      console.log("🔄 Manual token request received");
+      handleTokenRequest();
+    };
+
+    window.addEventListener('request-push-token', handleManualRequest);
+    return () => window.removeEventListener('request-push-token', handleManualRequest);
   }, []);
 
   // Listen for global broadcast notifications

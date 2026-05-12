@@ -8,7 +8,7 @@ import CartDrawer from "@/components/user/CartDrawer";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
-import { FiAlertCircle, FiSearch, FiShoppingCart, FiSun, FiCoffee, FiBox } from "react-icons/fi";
+import { FiAlertCircle, FiSearch, FiShoppingCart, FiSun, FiCoffee, FiBox, FiClock } from "react-icons/fi";
 
 type TabFilter = "all" | "beverages" | "snack";
 
@@ -25,6 +25,16 @@ export default function UserMenuPage() {
   const [isOrderingEnabled, setIsOrderingEnabled] = useState(true);
   const [activeNotification, setActiveNotification] = useState<{ title: string; body: string; timestamp: any } | null>(null);
   const [showNotifyBtn, setShowNotifyBtn] = useState(false);
+  const [timerEndAt, setTimerEndAt] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<string>("");
+  const [isTimerActive, setIsTimerActive] = useState(false);
+
+  // Function to refresh/request token
+  const refreshPushToken = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('request-push-token'));
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchItems());
@@ -64,11 +74,54 @@ export default function UserMenuPage() {
       }
     );
 
+    // Listen to timer
+    const unsubTimer = onSnapshot(doc(db, "settings", "timer"), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setIsTimerActive(data.isActive);
+        setTimerEndAt(data.endAt);
+      } else {
+        setIsTimerActive(false);
+        setTimerEndAt(null);
+      }
+    });
+
     return () => {
       unsubOrdering();
       unsubNotify();
+      unsubTimer();
     };
   }, [dispatch]);
+
+  // Countdown Logic
+  useEffect(() => {
+    if (!isTimerActive || !timerEndAt) {
+      setTimeLeft("");
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const distance = timerEndAt - now;
+
+      if (distance < 0) {
+        setTimeLeft("00:00:00");
+        setIsTimerActive(false);
+        clearInterval(interval);
+        return;
+      }
+
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft(
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isTimerActive, timerEndAt]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -80,6 +133,9 @@ export default function UserMenuPage() {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const permission = await Notification.requestPermission();
       setShowNotifyBtn(permission === 'default');
+      if (permission === 'granted') {
+        refreshPushToken();
+      }
     }
   };
 
@@ -112,43 +168,17 @@ export default function UserMenuPage() {
   const fullText = "Savor the moment...";
   const [displayText, setDisplayText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [typingSpeed, setTypingSpeed] = useState(150);
-
-  useEffect(() => {
-    const handleType = () => {
-      const current = displayText;
-      const shouldDelete = isDeleting;
-      
-      setDisplayText(
-        shouldDelete 
-          ? fullText.substring(0, current.length - 1) 
-          : fullText.substring(0, current.length + 1)
-      );
-
-      setTypingSpeed(shouldDelete ? 100 : 150);
-
-      if (!shouldDelete && current === fullText) {
-        setTimeout(() => setIsDeleting(true), 2000);
-      } else if (shouldDelete && current === "") {
-        setIsDeleting(false);
-      }
-    };
-
-    const timer = setTimeout(handleType, typingSpeed);
-    return () => clearTimeout(timer);
-  }, [displayText, isDeleting, typingSpeed]);
 
   return (
     <>
       <div className="space-y-6">
         {/* Global Notification Banner */}
-        {activeNotification && (
+        {/* {activeNotification && (
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mx-6 mt-4 p-5 bg-[#1d4ed8] rounded-3xl flex items-start gap-4 text-white shadow-xl shadow-blue-100 border border-blue-400/20 relative overflow-hidden group"
           >
-            {/* Decorative background element */}
             <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700" />
             
             <div className="mt-1 w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
@@ -172,7 +202,7 @@ export default function UserMenuPage() {
               )}
             </div>
           </motion.div>
-        )}
+        )} */}
 
         {/* Ordering Status Banner */}
         {!isOrderingEnabled && (
@@ -185,23 +215,42 @@ export default function UserMenuPage() {
           </div>
         )}
 
-        {/* Quote Section */}
-        <div className="py-5 px-6 text-left">
-          <div className="flex flex-col items-start justify-start gap-8">
-            <div className="space-y-2 font-dm-sans min-h-[120px] flex items-center justify-start">
-              <motion.h1 
-                className="text-4xl sm:text-5xl lg:text-8xl font-black tracking-tight text-black leading-tight"
-              >
-                {displayText}
-                <motion.span
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                  className="inline-block w-2 lg:w-4 h-10 lg:h-20 bg-[#1d4eb8] ml-2 align-middle"
-                />
-              </motion.h1>
+        {/* Timer/Header Section */}
+        <div className="py-8 px-6 text-left">
+          <div className="max-w-4xl">
+            <div className="mb-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">
+                {isTimerActive ? "Ordering Deadline" : greeting()}
+              </span>
             </div>
-
-           
+            
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-12">
+              {isTimerActive ? (
+                <div className="flex flex-col">
+                  <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-6"
+                  >
+                    <span className="text-6xl sm:text-7xl lg:text-[10rem] font-black tracking-tighter text-black tabular-nums leading-none">
+                      {timeLeft || "00:00:00"}
+                    </span>
+                    <div className="hidden lg:flex flex-col gap-1 text-[#1d4ed8]">
+                      <FiClock size={40} className="animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Live</span>
+                    </div>
+                  </motion.div>
+                  <p className="text-sm font-medium text-gray-400 mt-2">Time remaining to place your orders for this session.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <h1 className="text-4xl sm:text-5xl lg:text-8xl font-black tracking-tighter text-black leading-tight">
+                    {greeting()},<br />
+                    {userName?.split(" ")[0]}
+                  </h1>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
