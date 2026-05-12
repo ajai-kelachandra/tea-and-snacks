@@ -23,19 +23,65 @@ export default function UserMenuPage() {
   const [search, setSearch] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [isOrderingEnabled, setIsOrderingEnabled] = useState(true);
+  const [activeNotification, setActiveNotification] = useState<{ title: string; body: string; timestamp: any } | null>(null);
+  const [showNotifyBtn, setShowNotifyBtn] = useState(false);
 
   useEffect(() => {
     dispatch(fetchItems());
 
     // Listen to ordering status
-    const unsub = onSnapshot(doc(db, "settings", "ordering"), (doc) => {
+    const unsubOrdering = onSnapshot(doc(db, "settings", "ordering"), (doc) => {
       if (doc.exists()) {
         setIsOrderingEnabled(doc.data().isEnabled);
       }
     });
 
-    return () => unsub();
+    // Listen to latest global notification for the banner
+    const unsubNotify = onSnapshot(
+      doc(db, "globalNotifications", "current"), 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data.timestamp) {
+            const sentTime = data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestamp).getTime();
+            const now = Date.now();
+            
+            // Show banner if notification is less than 30 minutes old
+            if (now - sentTime < 1800000) {
+              setActiveNotification({
+                title: data.title,
+                body: data.body,
+                timestamp: sentTime
+              });
+            } else {
+              setActiveNotification(null);
+            }
+          }
+        }
+      },
+      (error) => {
+        console.error("🔥 User Menu Notification Listener Error:", error);
+      }
+    );
+
+    return () => {
+      unsubOrdering();
+      unsubNotify();
+    };
   }, [dispatch]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setShowNotifyBtn(Notification.permission === 'default');
+    }
+  }, []);
+
+  const requestNotifyPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const permission = await Notification.requestPermission();
+      setShowNotifyBtn(permission === 'default');
+    }
+  };
 
   const activeItems = items.filter((i) => i.isActive);
 
@@ -95,9 +141,42 @@ export default function UserMenuPage() {
   return (
     <>
       <div className="space-y-6">
+        {/* Global Notification Banner */}
+        {activeNotification && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-6 mt-4 p-5 bg-[#1d4ed8] rounded-3xl flex items-start gap-4 text-white shadow-xl shadow-blue-100 border border-blue-400/20 relative overflow-hidden group"
+          >
+            {/* Decorative background element */}
+            <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700" />
+            
+            <div className="mt-1 w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <FiCoffee size={20} className="text-white" />
+            </div>
+            <div className="flex-1 relative z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">Live Announcement</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              </div>
+              <p className="text-base font-bold mb-1 leading-tight">{activeNotification.title}</p>
+              <p className="text-xs text-blue-50/80 leading-relaxed font-medium mb-3">{activeNotification.body}</p>
+              
+              {showNotifyBtn && (
+                <button 
+                  onClick={requestNotifyPermission}
+                  className="bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 border border-white/10"
+                >
+                  Enable Mobile Alerts
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Ordering Status Banner */}
         {!isOrderingEnabled && (
-          <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700 animate-pulse">
+          <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700">
             <FiAlertCircle size={20} className="shrink-0" />
             <div>
               <p className="text-sm font-bold">Ordering is currently closed</p>
