@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react';
 import { db, messaging } from '@/lib/firebase';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { getToken } from 'firebase/messaging';
+import toast from 'react-hot-toast';
+import { FiBell } from 'react-icons/fi';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
@@ -45,15 +47,46 @@ export default function PushNotificationManager() {
         
         const lastSeen = parseInt(localStorage.getItem('lastSeenNotificationTime') || "0", 10);
         
-        if (now - sentTime < 60000 && sentTime > lastSeen && sentTime !== lastProcessedTime.current) {
+        // Increased window to 5 minutes and removed strict equality check to be more robust
+        // We primarily rely on sentTime > lastSeen to prevent duplicates
+        if (Math.abs(now - sentTime) < 300000 && sentTime > lastSeen) {
+          lastProcessedTime.current = sentTime;
+          localStorage.setItem('lastSeenNotificationTime', sentTime.toString());
+
+          // 1. Show In-App Toast (Always works if user is on the site)
+          toast(
+            (t) => (
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                  <FiBell size={16} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-black text-[10px] uppercase tracking-widest text-blue-600 mb-0.5">Broadcast Alert</p>
+                  <p className="font-bold text-sm text-gray-900 leading-tight mb-1">{data.title || "Iro Snacks"}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed font-medium">{data.body}</p>
+                </div>
+              </div>
+            ),
+            {
+              duration: 10000, // Show for 10 seconds
+              style: {
+                maxWidth: '400px',
+                padding: '20px',
+                borderRadius: '24px',
+              }
+            }
+          );
+          
+          // 2. Show System Notification (If permission granted)
           if (Notification.permission === 'granted') {
-            lastProcessedTime.current = sentTime;
-            localStorage.setItem('lastSeenNotificationTime', sentTime.toString());
-            
-            new Notification(data.title || "Iro Snacks", {
-              body: data.body,
-              icon: '/favicon.ico',
-            });
+            try {
+              new Notification(data.title || "Iro Snacks", {
+                body: data.body,
+                icon: '/favicon.ico',
+              });
+            } catch (err) {
+              console.error("Browser notification failed:", err);
+            }
           }
         }
       }
