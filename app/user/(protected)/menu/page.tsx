@@ -19,7 +19,7 @@ export default function UserMenuPage() {
   const cartItems = useAppSelector((s) => s.cart.items);
   const totalQty = cartItems.reduce((s, i) => s + i.quantity, 0);
 
-  const [tab, setTab] = useState<TabFilter>("all");
+  const [tab, setTab] = useState<TabFilter>("beverages");
   const [search, setSearch] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [isOrderingEnabled, setIsOrderingEnabled] = useState(true);
@@ -153,7 +153,6 @@ export default function UserMenuPage() {
   });
 
   const tabs = [
-    { id: "all" as TabFilter, label: "All", icon: FiSun },
     { id: "beverages" as TabFilter, label: "Beverages", icon: FiCoffee },
     { id: "snack" as TabFilter, label: "Snacks", icon: FiBox },
   ];
@@ -216,64 +215,41 @@ export default function UserMenuPage() {
         )}
 
         {/* Timer/Header Section */}
-        <div className="py-8 px-6 text-left">
-          <div className="max-w-4xl">
-            <div className="mb-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">
-                {isTimerActive ? "Ordering Deadline" : greeting()}
-              </span>
-            </div>
-            
-            <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-12">
-              {isTimerActive ? (
-                <div className="flex flex-col">
-                  <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-6"
-                  >
-                    <span className="text-6xl sm:text-7xl lg:text-[10rem] font-black tracking-tighter text-black tabular-nums leading-none">
-                      {timeLeft || "00:00:00"}
-                    </span>
-                    <div className="hidden lg:flex flex-col gap-1 text-[#1d4ed8]">
-                      <FiClock size={40} className="animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Live</span>
-                    </div>
-                  </motion.div>
-                  <p className="text-sm font-medium text-gray-400 mt-2">Time remaining to place your orders for this session.</p>
+        <div className="py-4 px-6">
+          <div className="flex items-center justify-between gap-4">
+            {/* Greeting (always shown) */}
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black leading-tight">
+              {greeting()}, {userName?.split(" ")[0]} 👋
+            </h1>
+
+            {/* Timer (shown on right when active) */}
+            {isTimerActive && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-end gap-1 shrink-0"
+              >
+                <div className="flex items-center gap-1.5">
+                  <FiClock size={13} className="animate-pulse text-orange-500" />
+                  <span className="text-xl font-black tabular-nums tracking-tight text-black">
+                    {timeLeft || "00:00:00"}
+                  </span>
                 </div>
-              ) : (
-                <div className="flex flex-col">
-                  <h1 className="text-4xl sm:text-5xl lg:text-8xl font-black tracking-tighter text-black leading-tight">
-                    {greeting()},<br />
-                    {userName?.split(" ")[0]}
-                  </h1>
-                </div>
-              )}
-            </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">
+                  Ordering ends soon
+                </span>
+              </motion.div>
+            )}
           </div>
         </div>
 
         {/* Search & Filter Section */}
         <div className="space-y-8 font-dm-sans">
           {/* Large Search Bar */}
-          <div className="relative group max-w-2xl mx-auto">
-            <FiSearch
-              size={20}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors"
-            />
-            <input
-              type="text"
-              id="menu-search"
-              placeholder="Search for something delicious…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white border border-gray-100 h-16 pl-14 pr-6 rounded-[24px] text-sm font-medium shadow-sm group-hover:shadow-md focus:shadow-xl focus:shadow-blue-50 outline-none transition-all placeholder:text-gray-300"
-            />
-          </div>
+          
 
           {/* Premium Category Tabs */}
-          <div className="flex justify-center gap-3 overflow-x-auto pb-4 no-scrollbar">
+          <div className="flex justify-left gap-3 overflow-x-auto pb-4 no-scrollbar">
             {tabs.map(({ id, label }) => (
               <button
                 key={id}
@@ -282,7 +258,7 @@ export default function UserMenuPage() {
                 className={`shrink-0  px-8 py-3 rounded-full text-[10px] font-medium uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 ${
                   tab === id
                     ? "bg-[#1d4ed8] text-white shadow-lg shadow-blue-100"
-                    : "bg-white text-gray-400 border border-gray-100 hover:text-[#1d4ed8] hover:border-gray-200"
+                    : "bg-white text-black border border-gray-100 hover:text-[#1d4ed8] hover:border-gray-200"
                 }`}
               >
                 {label}

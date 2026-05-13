@@ -1,10 +1,11 @@
 "use client";
 
 import { TeaSnackItem } from "@/features/itemsSlice";
-import { addToCart } from "@/features/cartSlice";
+import { addToCart, updateQuantity, removeFromCart } from "@/features/cartSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Badge from "@/components/ui/Badge";
-import { FiPlus, FiCheck } from "react-icons/fi";
+import { FiPlus, FiMinus } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
 interface MenuCardProps {
@@ -22,18 +23,17 @@ export default function MenuCard({ item, isOrderingEnabled = true }: MenuCardPro
       toast.error("Ordering is currently disabled.");
       return;
     }
-    dispatch(
-      addToCart({
-        id: item.id,
-        name: item.name,
-        type: item.type,
-        imageUrl: item.imageUrl,
-        price: item.price,
-      })
-    );
-    toast.success(`${item.name} added to cart!`, {
-      duration: 2000,
-    });
+    dispatch(addToCart({ id: item.id, name: item.name, type: item.type, imageUrl: item.imageUrl, price: item.price }));
+    if (!inCart) toast.success(`${item.name} added!`, { duration: 1500 });
+  };
+
+  const handleDecrease = () => {
+    if (!inCart) return;
+    if (inCart.quantity === 1) {
+      dispatch(removeFromCart(item.id));
+    } else {
+      dispatch(updateQuantity({ id: item.id, quantity: inCart.quantity - 1 }));
+    }
   };
 
   return (
@@ -80,31 +80,58 @@ export default function MenuCard({ item, isOrderingEnabled = true }: MenuCardPro
           {item.description}
         </p>
 
-        {/* Action Button */}
-        <button
-          onClick={handleAdd}
-          id={`add-to-cart-${item.id}`}
-          disabled={!isOrderingEnabled && !inCart}
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 active:scale-95
-            ${inCart
-              ? "bg-green-50 text-green-600 border border-green-100 hover:bg-green-100"
-              : !isOrderingEnabled
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "bg-[#1d4ed8] text-white hover:bg-[#1e40af] shadow-lg shadow-blue-100"
-            }`}
-        >
+        {/* Action Button / Stepper */}
+        <AnimatePresence mode="wait">
           {inCart ? (
-            <>
-              <FiCheck size={14} className="stroke-[3]" />
-              In Order ({inCart.quantity})
-            </>
+            <motion.div
+              key="stepper"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center justify-between gap-2 bg-gray-50 border border-gray-100 rounded-2xl p-1"
+            >
+              <button
+                onClick={handleDecrease}
+                id={`decrease-${item.id}`}
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all active:scale-90 shadow-sm"
+              >
+                <FiMinus size={13} className="stroke-[3]" />
+              </button>
+
+              <span className="text-sm font-black text-gray-900 tabular-nums min-w-[20px] text-center">
+                {inCart.quantity}
+              </span>
+
+              <button
+                onClick={handleAdd}
+                id={`increase-${item.id}`}
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#1d4ed8] text-white hover:bg-[#1e40af] transition-all active:scale-90 shadow-sm shadow-blue-100"
+              >
+                <FiPlus size={13} className="stroke-[3]" />
+              </button>
+            </motion.div>
           ) : (
-            <>
+            <motion.button
+              key="add"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.15 }}
+              onClick={handleAdd}
+              id={`add-to-cart-${item.id}`}
+              disabled={!isOrderingEnabled}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 active:scale-95
+                ${!isOrderingEnabled
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-[#1d4ed8] text-white hover:bg-[#1e40af] shadow-lg shadow-blue-100"
+                }`}
+            >
               <FiPlus size={14} className="stroke-[3]" />
               Add to Order
-            </>
+            </motion.button>
           )}
-        </button>
+        </AnimatePresence>
       </div>
     </div>
   );
