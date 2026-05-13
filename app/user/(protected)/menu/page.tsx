@@ -48,14 +48,14 @@ export default function UserMenuPage() {
 
     // Listen to latest global notification for the banner
     const unsubNotify = onSnapshot(
-      doc(db, "globalNotifications", "current"), 
+      doc(db, "globalNotifications", "current"),
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data();
           if (data.timestamp) {
             const sentTime = data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestamp).getTime();
             const now = Date.now();
-            
+
             // Show banner if notification is less than 30 minutes old
             if (now - sentTime < 1800000) {
               setActiveNotification({
@@ -143,12 +143,12 @@ export default function UserMenuPage() {
 
   const filtered = activeItems.filter((item) => {
     const isBeverage = item.type === "tea" || item.type === "coffee";
-    const matchTab = 
-      tab === "all" || 
-      (tab === "beverages" && isBeverage) || 
-      (tab === "snack" && item.type === "snack");    const matchSearch =
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.description.toLowerCase().includes(search.toLowerCase());
+    const matchTab =
+      tab === "all" ||
+      (tab === "beverages" && isBeverage) ||
+      (tab === "snack" && item.type === "snack"); const matchSearch =
+        item.name.toLowerCase().includes(search.toLowerCase()) ||
+        item.description.toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
   });
 
@@ -246,7 +246,7 @@ export default function UserMenuPage() {
         {/* Search & Filter Section */}
         <div className="space-y-8 font-dm-sans">
           {/* Large Search Bar */}
-          
+
 
           {/* Premium Category Tabs */}
           <div className="flex justify-left gap-3 overflow-x-auto pb-4 no-scrollbar">
@@ -255,11 +255,10 @@ export default function UserMenuPage() {
                 key={id}
                 onClick={() => setTab(id)}
                 id={`tab-${id}`}
-                className={`shrink-0  px-8 py-3 rounded-full text-[10px] font-medium uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 ${
-                  tab === id
+                className={`shrink-0  px-8 py-3 rounded-full text-[10px] font-medium uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 ${tab === id
                     ? "bg-[#1d4ed8] text-white shadow-lg shadow-blue-100"
                     : "bg-white text-black border border-gray-100 hover:text-[#1d4ed8] hover:border-gray-200"
-                }`}
+                  }`}
               >
                 {label}
               </button>
