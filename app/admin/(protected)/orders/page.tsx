@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { calculateOrderCharges } from "@/lib/orderUtils";
 
 const STATUS_OPTIONS: OrderStatus[] = ["placed", "prepared", "cancelled"];
 
@@ -56,6 +57,9 @@ export default function AdminOrdersPage() {
     return matchSearch && matchStatus && matchType && matchFrom && matchTo;
   });
 
+  // Calculate order charges chronologically across all loaded orders
+  const orderCharges = calculateOrderCharges(orders);
+
   const handleStatusChange = async (id: string, status: OrderStatus) => {
     setUpdating(id);
     try {
@@ -69,13 +73,25 @@ export default function AdminOrdersPage() {
   };
 
   const handleWhatsAppShare = (order: any) => {
-    const itemsList = order.items
-      .map((item: any) => `- ${item.name} ×${item.quantity}`)
+    const charges = orderCharges[order.id] || { items: order.items.map((i: any) => ({ ...i, billableQty: 0 })), extraCharge: 0 };
+    const itemsList = charges.items
+      .map((item: any) => {
+        let text = `- ${item.name} ×${item.quantity}`;
+        if (item.billableQty > 0) {
+          text += ` [${item.billableQty} extra: Rs. ${item.billableQty * 12}]`;
+        }
+        return text;
+      })
       .join("\n");
     
-    const message = `*Order #${order.orderNumber || "—"} from ${order.userName || "Unknown"}*\n\n` +
-      `*Items:*\n${itemsList}\n\n` +
-      `*Status:* ${order.status.toUpperCase()}\n` +
+    let message = `*Order #${order.orderNumber || "—"} from ${order.userName || "Unknown"}*\n\n` +
+      `*Items:*\n${itemsList}\n\n`;
+
+    if (charges.extraCharge > 0) {
+      message += `*Extra Charge:* ₹${charges.extraCharge}\n\n`;
+    }
+
+    message += `*Status:* ${order.status.toUpperCase()}\n` +
       `*Time:* ${format(new Date(order.createdAt), "hh:mm a, dd MMM")}\n` +
       `*Email:* ${order.userEmail}`;
     
@@ -175,79 +191,99 @@ export default function AdminOrdersPage() {
         </div>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
+          <table className="w-full text-sm min-w-[750px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Order ID</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Items</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Extra Charge</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date & Time</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-                {filtered.map((order, idx) => {
-                  // Calculate a sequential display number based on total orders
-                  // Assuming orders are sorted by date desc
-                  const displayId = orders.length - orders.indexOf(order);
-                  
-                  return (
-                    <tr key={order.id} className="hover:bg-gray-50/40 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className="font-bold text-xs bg-blue-50 px-3 py-1 rounded-lg text-[#1d4ed8]">
-                          #{displayId}
-                        </span>
-                      </td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{order.userName || "—"}</p>
-                    <p className="text-xs text-gray-400">{order.userEmail}</p>
-                  </td>
-                  <td className="px-4 py-3 max-w-[200px]">
-                    <div className="flex flex-wrap gap-1">
-                      {order.items.map((item, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full"
-                        >
-                          {item.name} ×{item.quantity}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">
-                    {format(new Date(order.createdAt), "dd MMM yyyy, hh:mm a")}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          handleStatusChange(order.id, e.target.value as OrderStatus)
-                        }
-                        disabled={updating === order.id}
-                        className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-[#1d4ed8] cursor-pointer"
-                        id={`status-${order.id}`}
-                      >
-                        {STATUS_OPTIONS.map((s) => (
-                          <option key={s} value={s} className="capitalize">
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+              {filtered.map((order) => {
+                // Calculate a sequential display number based on total orders
+                // Assuming orders are sorted by date desc
+                const displayId = orders.length - orders.indexOf(order);
+                const charges = orderCharges[order.id] || { items: order.items.map((i: any) => ({ ...i, billableQty: 0 })), extraCharge: 0 };
 
-                      <button
-                        onClick={() => handleWhatsAppShare(order)}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                        title="Send to WhatsApp"
-                        id={`wa-${order.id}`}
-                      >
-                        <FiMessageCircle size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={order.id} className="hover:bg-gray-50/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <span className="font-bold text-xs bg-blue-50 px-3 py-1 rounded-lg text-[#1d4ed8]">
+                        #{displayId}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900">{order.userName || "—"}</p>
+                      <p className="text-xs text-gray-400">{order.userEmail}</p>
+                    </td>
+                    <td className="px-4 py-3 max-w-[250px]">
+                      <div className="flex flex-wrap gap-1.5">
+                        {charges.items.map((item, idx) => (
+                          <span
+                            key={idx}
+                            className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${
+                              item.billableQty > 0
+                                ? "bg-red-50 text-red-700 border border-red-100 font-semibold"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {item.name} ×{item.quantity}
+                            {item.billableQty > 0 && (
+                              <span className="text-[9px] bg-red-600 text-white font-extrabold px-1 rounded-sm animate-pulse ml-0.5">
+                                +{item.billableQty} extra
+                              </span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {charges.extraCharge > 0 ? (
+                        <span className="font-black text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-lg">
+                          ₹{charges.extraCharge}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 font-medium">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500">
+                      {format(new Date(order.createdAt), "dd MMM yyyy, hh:mm a")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={order.status}
+                          onChange={(e) =>
+                            handleStatusChange(order.id, e.target.value as OrderStatus)
+                          }
+                          disabled={updating === order.id}
+                          className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-[#1d4ed8] cursor-pointer animate-fadeIn"
+                          id={`status-${order.id}`}
+                        >
+                          {STATUS_OPTIONS.map((s) => (
+                            <option key={s} value={s} className="capitalize">
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          onClick={() => handleWhatsAppShare(order)}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Send to WhatsApp"
+                          id={`wa-${order.id}`}
+                        >
+                          <FiMessageCircle size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchOrders } from "@/features/ordersSlice";
 import { FiClipboard } from "react-icons/fi";
 import { format } from "date-fns";
+import { calculateOrderCharges } from "@/lib/orderUtils";
 
 export default function UserOrdersPage() {
   const dispatch = useAppDispatch();
@@ -28,8 +29,8 @@ export default function UserOrdersPage() {
     return hour < 13 ? "Morning Session" : "Evening Session";
   };
 
-  // Track daily total item counts (Beverages + Snacks)
-  const totalCountsByDate: Record<string, number> = {};
+  // Pre-calculate charges chronologically for all orders
+  const orderCharges = calculateOrderCharges(orders);
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 font-dm-sans">
@@ -59,17 +60,9 @@ export default function UserOrdersPage() {
       ) : (
         <div className="space-y-4">
           {[...myOrders].reverse().map((order) => {
-            const dateKey = format(new Date(order.createdAt), "yyyy-MM-dd");
             const session = getSession(order.createdAt);
-            
-            const processedItems = order.items.map(item => {
-              let billableQty = 0;
-              for (let i = 0; i < item.quantity; i++) {
-                totalCountsByDate[dateKey] = (totalCountsByDate[dateKey] || 0) + 1;
-                if (totalCountsByDate[dateKey] > 2) billableQty++;
-              }
-              return { ...item, billableQty };
-            });
+            const charges = orderCharges[order.id] || { items: order.items.map((i: any) => ({ ...i, billableQty: 0 })), extraCharge: 0 };
+            const processedItems = charges.items;
 
             return (
               <div key={order.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:border-blue-100 transition-all">
@@ -98,7 +91,7 @@ export default function UserOrdersPage() {
 
                 <div className="space-y-3">
                   {processedItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between group">
+                    <div key={idx} className="flex items-center justify-between group animate-fadeIn">
                       <div className="flex items-center gap-3">
                         <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-black text-black">
                           {item.quantity}
@@ -108,7 +101,7 @@ export default function UserOrdersPage() {
                           {item.billableQty > 0 && (
                             <div className="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-red-50 text-red-600 border border-red-100">
                               <span className="text-[10px] font-bold tracking-wider">
-                                Billable item ({item.billableQty} items exceeding daily limit)
+                                Extra item: ₹12 × {item.billableQty} = ₹{item.billableQty * 12} (Exceeded daily limit)
                               </span>
                             </div>
                           )}
@@ -119,9 +112,18 @@ export default function UserOrdersPage() {
                   ))}
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-50 text-right">
-                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Ordered at </span>
-                  <span className="text-xs font-bold text-gray-600">{format(new Date(order.createdAt), "hh:mm a")}</span>
+                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                  <div>
+                    {charges.extraCharge > 0 && (
+                      <span className="text-xs font-black text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-1.5 shadow-sm">
+                        Extra Charge: ₹{charges.extraCharge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Ordered at </span>
+                    <span className="text-xs font-bold text-gray-600">{format(new Date(order.createdAt), "hh:mm a")}</span>
+                  </div>
                 </div>
               </div>
             );
@@ -131,3 +133,4 @@ export default function UserOrdersPage() {
     </div>
   );
 }
+

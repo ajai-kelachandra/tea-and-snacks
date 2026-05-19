@@ -8,7 +8,7 @@ import CartDrawer from "@/components/user/CartDrawer";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
-import { FiAlertCircle, FiSearch, FiShoppingCart, FiSun, FiCoffee, FiBox, FiClock } from "react-icons/fi";
+import { FiAlertCircle, FiSearch, FiShoppingCart, FiSun, FiCoffee, FiBox, FiClock, FiMoon } from "react-icons/fi";
 
 type TabFilter = "all" | "beverages" | "snack";
 
@@ -28,6 +28,7 @@ export default function UserMenuPage() {
   const [timerEndAt, setTimerEndAt] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [isTimerActive, setIsTimerActive] = useState(false);
+  const [activeSession, setActiveSession] = useState<"morning" | "evening">("morning");
 
   // Function to refresh/request token
   const refreshPushToken = () => {
@@ -38,6 +39,9 @@ export default function UserMenuPage() {
 
   useEffect(() => {
     dispatch(fetchItems());
+
+    const hour = new Date().getHours();
+    setActiveSession(hour < 12 ? "morning" : "evening");
 
     // Listen to ordering status
     const unsubOrdering = onSnapshot(doc(db, "settings", "ordering"), (doc) => {
@@ -141,14 +145,20 @@ export default function UserMenuPage() {
 
   const activeItems = items.filter((i) => i.isActive);
 
-  const filtered = activeItems.filter((item) => {
+  // Filter items by current selected session
+  const sessionItems = activeItems.filter((item) => {
+    return item.timeSlot === activeSession;
+  });
+
+  const filtered = sessionItems.filter((item) => {
     const isBeverage = item.type === "tea" || item.type === "coffee";
     const matchTab =
       tab === "all" ||
       (tab === "beverages" && isBeverage) ||
-      (tab === "snack" && item.type === "snack"); const matchSearch =
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.description.toLowerCase().includes(search.toLowerCase());
+      (tab === "snack" && item.type === "snack");
+    const matchSearch =
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.description.toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
   });
 
@@ -218,9 +228,24 @@ export default function UserMenuPage() {
         <div className="py-4 px-6">
           <div className="flex items-center justify-between gap-4">
             {/* Greeting (always shown) */}
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black leading-tight">
-              {greeting()}, {userName?.split(" ")[0]} 👋
-            </h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black leading-tight">
+                {greeting()}, {userName?.split(" ")[0]} 👋
+              </h1>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
+                {activeSession === "morning" ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    Morning Menu Active (Teas & Snacks)
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                    Evening Menu Active (Coffees & Snacks)
+                  </>
+                )}
+              </p>
+            </div>
 
             {/* Timer (shown on right when active) */}
             {isTimerActive && (
@@ -244,9 +269,7 @@ export default function UserMenuPage() {
         </div>
 
         {/* Search & Filter Section */}
-        <div className="space-y-8 font-dm-sans">
-          {/* Large Search Bar */}
-
+        <div className="space-y-6 font-dm-sans">
 
           {/* Premium Category Tabs */}
           <div className="flex justify-left gap-3 overflow-x-auto pb-4 no-scrollbar">
@@ -256,8 +279,8 @@ export default function UserMenuPage() {
                 onClick={() => setTab(id)}
                 id={`tab-${id}`}
                 className={`shrink-0  px-8 py-3 rounded-full text-[10px] font-medium uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 ${tab === id
-                    ? "bg-[#1d4ed8] text-white shadow-lg shadow-blue-100"
-                    : "bg-white text-black border border-gray-100 hover:text-[#1d4ed8] hover:border-gray-200"
+                  ? "bg-[#1d4ed8] text-white shadow-lg shadow-blue-100"
+                  : "bg-white text-black border border-gray-100 hover:text-[#1d4ed8] hover:border-gray-200"
                   }`}
               >
                 {label}

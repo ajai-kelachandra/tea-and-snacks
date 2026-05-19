@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp, onSnapshot, getDoc, collection, query, orderBy } from "firebase/firestore";
+import { calculateOrderCharges } from "@/lib/orderUtils";
 
 export default function AdminDashboardPage() {
   const dispatch = useAppDispatch();
@@ -220,6 +221,7 @@ export default function AdminDashboardPage() {
   ];
 
   const recentOrders = orders.slice(0, 5);
+  const orderCharges = calculateOrderCharges(orders);
 
   return (
     <div className="space-y-6">
@@ -425,44 +427,70 @@ export default function AdminDashboardPage() {
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Items</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Extra Charge</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Date</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50/50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{order.userName || order.userEmail}</p>
-                      <p className="text-xs text-gray-400">{order.userEmail}</p>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <p className="text-gray-600 text-xs">
-                        {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`badge ${
-                          order.status === "placed"
-                            ? "bg-blue-100 text-blue-800"
-                            : order.status === "prepared"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {recentOrders.map((order) => {
+                  const charges = orderCharges[order.id] || { items: order.items.map((i: any) => ({ ...i, billableQty: 0 })), extraCharge: 0 };
+                  
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50/50">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-900">{order.userName || order.userEmail}</p>
+                        <p className="text-xs text-gray-400">{order.userEmail}</p>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {charges.items.map((i, idx) => (
+                            <span
+                              key={idx}
+                              className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-full ${
+                                i.billableQty > 0
+                                  ? "bg-red-50 text-red-700 border border-red-100 font-semibold"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {i.name} ×{i.quantity}
+                              {i.billableQty > 0 && <span className="text-[9px] text-red-500 font-bold ml-1">+{i.billableQty} extra</span>}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs font-bold">
+                        {charges.extraCharge > 0 ? (
+                          <span className="text-red-600 bg-red-50 border border-red-100 px-2.5 py-0.5 rounded-md">
+                            ₹{charges.extraCharge}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 font-medium">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">
+                        {new Date(order.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`badge ${
+                            order.status === "placed"
+                              ? "bg-blue-100 text-blue-800"
+                              : order.status === "prepared"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

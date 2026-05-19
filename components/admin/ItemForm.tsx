@@ -36,7 +36,7 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || "");
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
-  const [timeSlot, setTimeSlot] = useState<TimeSlot>(initialData?.timeSlot || "all-day");
+  const [timeSlot, setTimeSlot] = useState<TimeSlot>(initialData?.timeSlot || "morning");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -103,7 +103,7 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
 
       if (mode === "add") {
         await dispatch(addItem(data as Omit<TeaSnackItem, "id" | "createdAt">)).unwrap();
-        
+
         // Also save as a template for Quick Add
         try {
           const { db } = await import("@/lib/firebase");
@@ -168,16 +168,15 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
         )}
       </div>
 
-        <Select
-          label="Time Slot"
-          id="item-time-slot"
-          value={timeSlot}
-          onChange={(e) => setTimeSlot(e.target.value as TimeSlot)}
-        >
-          <option value="all-day">All Day</option>
-          <option value="morning">Morning</option>
-          <option value="evening">Evening</option>
-        </Select>
+      <Select
+        label="Time Slot"
+        id="item-time-slot"
+        value={timeSlot}
+        onChange={(e) => setTimeSlot(e.target.value as TimeSlot)}
+      >
+        <option value="morning">Morning</option>
+        <option value="evening">Evening</option>
+      </Select>
 
       {/* Image Section - DISABLED UPLOAD (No Firebase Storage) */}
       <div>
@@ -231,7 +230,7 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
           )}
         </div>
         */}
-        
+
         <p className="text-[10px] text-gray-400 mb-2 italic">
           * Image upload is disabled. Please paste a direct image link below.
         </p>
@@ -263,9 +262,8 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
             ${isActive ? "bg-[#1d4ed8]" : "bg-gray-300"}`}
         >
           <span
-            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${
-              isActive ? "translate-x-5" : "translate-x-0"
-            }`}
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${isActive ? "translate-x-5" : "translate-x-0"
+              }`}
           />
         </button>
         <span className="text-sm font-medium text-gray-700">
