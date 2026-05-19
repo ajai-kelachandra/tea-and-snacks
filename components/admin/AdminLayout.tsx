@@ -15,6 +15,9 @@ import {
   FiMenu,
   FiX,
   FiCoffee,
+  FiUsers,
+  FiChevronDown,
+  FiChevronUp,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
@@ -30,6 +33,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { userName } = useAppSelector((s) => s.auth);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [teaSnackOpen, setTeaSnackOpen] = useState(true);
 
   const handleLogout = async () => {
     localStorage.removeItem("mock_user");
@@ -59,7 +63,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <FiCoffee className="text-white" size={18} />
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm leading-none">Iro Snacks</p>
+            <p className="font-bold text-gray-900 text-sm leading-none">HR Portal</p>
             <p className="text-xs text-gray-400 mt-0.5">Admin Panel</p>
           </div>
           <button
@@ -71,25 +75,56 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="px-3 py-4 space-y-1 overflow-y-auto min-h-0">
-          {navLinks.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150
-                  ${active
-                    ? "bg-[#1d4ed8] text-white shadow-sm"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  }`}
-              >
-                <Icon size={16} />
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="px-3 py-4 space-y-3 overflow-y-auto min-h-0">
+          {/* Tea & Snack Category */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setTeaSnackOpen(!teaSnackOpen)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <span>Tea & Snack</span>
+              {teaSnackOpen ? <FiChevronUp size={12} /> : <FiChevronDown size={12} />}
+            </button>
+            
+            {teaSnackOpen && (
+              <div className="space-y-1 pl-1.5 animate-fadeIn">
+                {navLinks.map(({ href, label, icon: Icon }) => {
+                  const active = pathname === href;
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors duration-150
+                        ${active
+                          ? "bg-[#1d4ed8] text-white shadow-sm"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                    >
+                      <Icon size={14} />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Employees Category */}
+          <div className="space-y-1">
+            <Link
+              href="/admin/employees"
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors duration-150
+                ${pathname === "/admin/employees"
+                  ? "bg-[#1d4ed8] text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+            >
+              <FiUsers size={15} />
+              <span>Employees</span>
+            </Link>
+          </div>
         </nav>
 
         {/* Logout - Pushed to bottom */}
