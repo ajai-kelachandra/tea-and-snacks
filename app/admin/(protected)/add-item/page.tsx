@@ -140,7 +140,7 @@ export default function AddItemPage() {
         {/* Right Side: 2-Tab Session Designer */}
         <div className="lg:col-span-7 flex flex-col space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-gray-400">Session Menu Designer</h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-gray-400">Session Menu </h2>
             
             {/* Session Tabs Selector */}
             <div className="flex bg-gray-100/80 p-1 rounded-2xl border border-gray-200">

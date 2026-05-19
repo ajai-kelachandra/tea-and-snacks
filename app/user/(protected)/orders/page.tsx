@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { fetchOrders } from "@/features/ordersSlice";
+import { setOrders, Order } from "@/features/ordersSlice";
 import { FiClipboard } from "react-icons/fi";
 import { format } from "date-fns";
 import { calculateOrderCharges } from "@/lib/orderUtils";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
 export default function UserOrdersPage() {
   const dispatch = useAppDispatch();
@@ -13,15 +15,26 @@ export default function UserOrdersPage() {
   const { uid } = useAppSelector((s) => s.auth);
 
   useEffect(() => {
-    dispatch(fetchOrders());
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      })) as Order[];
+      dispatch(setOrders(ordersData));
+    });
+
+    return () => unsub();
   }, [dispatch]);
 
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  // Filter orders to only show the last 24 hours
+  // Filter orders to only show the last 24 hours and not cleared by admin
   const myOrders = [...orders]
-    .filter((o) => o.userId === uid && new Date(o.createdAt) > oneDayAgo)
+    .filter((o) => o.userId === uid && new Date(o.createdAt) > oneDayAgo && !o.isCleared)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const getSession = (dateStr: string) => {

@@ -14,11 +14,12 @@ import {
   FiActivity,
   FiMessageCircle,
   FiClock,
+  FiTrash2,
 } from "react-icons/fi";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp, onSnapshot, getDoc, collection, query, orderBy } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, onSnapshot, getDoc, collection, query, orderBy, getDocs } from "firebase/firestore";
 import { calculateOrderCharges } from "@/lib/orderUtils";
 
 export default function AdminDashboardPage() {
@@ -38,6 +39,8 @@ export default function AdminDashboardPage() {
 
   const [isOrderingEnabled, setIsOrderingEnabled] = useState(true);
   const [isUpdatingEnabled, setIsUpdatingEnabled] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchItems());
@@ -51,7 +54,10 @@ export default function AdminDashboardPage() {
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       })) as Order[];
-      dispatch(setOrders(ordersData));
+      
+      // Filter out cleared orders for dashboard view
+      const activeOrders = ordersData.filter((order) => !order.isCleared);
+      dispatch(setOrders(activeOrders));
     });
 
     // Listen to ordering status
@@ -110,6 +116,37 @@ export default function AdminDashboardPage() {
       toast.error("Failed to update ordering status");
     } finally {
       setIsUpdatingEnabled(false);
+    }
+  };
+
+  const handleClearAllOrders = async () => {
+    setIsClearing(true);
+    try {
+      const { writeBatch } = await import("firebase/firestore");
+      const ordersSnapshot = await getDocs(collection(db, "orders"));
+
+      // Filter docs that are not yet cleared
+      const unclearedDocs = ordersSnapshot.docs.filter((d) => !d.data().isCleared);
+
+      if (unclearedDocs.length === 0) {
+        toast.success("No orders to clear!");
+        setIsClearModalOpen(false);
+        return;
+      }
+
+      const batch = writeBatch(db);
+      unclearedDocs.forEach((d) => {
+        batch.update(d.ref, { isCleared: true });
+      });
+
+      await batch.commit();
+      toast.success("All orders cleared successfully! 🧹");
+      setIsClearModalOpen(false);
+    } catch (err) {
+      console.error("Clear orders failed:", err);
+      toast.error("Failed to clear orders.");
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -225,25 +262,37 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">Hello, {userName?.split("@")[0] || "Admin"}!</p>
         </div>
-        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ordering</span>
-              <span className={`text-[10px] font-bold uppercase tracking-tight ${isOrderingEnabled ? "text-green-600" : "text-red-600"}`}>
-                {isOrderingEnabled ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-            <button
-              onClick={toggleOrdering}
-              disabled={isUpdatingEnabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isOrderingEnabled ? "bg-green-500" : "bg-gray-200"}`}
-            >
-              <span className={`${isOrderingEnabled ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
-            </button>
+        <div className="flex items-center gap-3">
+          {/* Clear All Orders Button */}
+          <button
+            onClick={() => setIsClearModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-bold rounded-xl border border-red-100 transition-all duration-155 active:scale-95 disabled:opacity-50 shrink-0 shadow-sm cursor-pointer"
+          >
+            <FiTrash2 size={13} />
+            Clear All Orders
+          </button>
+
+          {/* Ordering Enabled toggle */}
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ordering</span>
+                <span className={`text-[10px] font-bold uppercase tracking-tight ${isOrderingEnabled ? "text-green-600" : "text-red-600"}`}>
+                  {isOrderingEnabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+              <button
+                onClick={toggleOrdering}
+                disabled={isUpdatingEnabled}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${isOrderingEnabled ? "bg-green-500" : "bg-gray-200"}`}
+              >
+                <span className={`${isOrderingEnabled ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
+              </button>
+          </div>
         </div>
       </div>
 
@@ -347,6 +396,48 @@ export default function AdminDashboardPage() {
                   <>
                     <FiMessageCircle size={14} />
                     Send Alert
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isClearModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn" onClick={() => setIsClearModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 border border-gray-100 animate-scaleUp">
+            <div className="flex items-center gap-3 text-red-600 mb-3">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <FiTrash2 size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Clear All Orders</h3>
+            </div>
+            
+            <p className="text-xs text-gray-500 font-medium leading-relaxed mb-6">
+              Are you sure you want to clear all orders? This will delete all order history and cannot be undone. This operation will clear the entire orders queue.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsClearModalOpen(false)}
+                disabled={isClearing}
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors uppercase tracking-widest cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearAllOrders}
+                disabled={isClearing}
+                className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-100"
+              >
+                {isClearing ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <FiTrash2 size={14} />
+                    Clear Orders
                   </>
                 )}
               </button>
