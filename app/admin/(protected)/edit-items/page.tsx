@@ -25,9 +25,9 @@ export default function EditItemsPage() {
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.description.toLowerCase().includes(search.toLowerCase());
     const isBeverage = item.type === "tea" || item.type === "coffee";
-    const matchType = 
-      filterType === "all" || 
-      (filterType === "beverages" && isBeverage) || 
+    const matchType =
+      filterType === "all" ||
+      (filterType === "beverages" && isBeverage) ||
       (filterType === "snack" && item.type === "snack");
     return matchSearch && matchType;
   });
@@ -65,7 +65,7 @@ export default function EditItemsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manage Items</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Manage Itemss</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {items.length} item{items.length !== 1 ? "s" : ""} total
           </p>
@@ -98,11 +98,10 @@ export default function EditItemsPage() {
             <button
               key={t}
               onClick={() => setFilterType(t)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold capitalize transition-colors duration-150 ${
-                filterType === t
+              className={`px-3 py-2 rounded-lg text-xs font-semibold capitalize transition-colors duration-150 ${filterType === t
                   ? "bg-[#1d4ed8] text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
+                }`}
             >
               {t}
             </button>
@@ -195,9 +194,8 @@ export default function EditItemsPage() {
                       id={`toggle-${item.id}`}
                     >
                       <span
-                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ${
-                          item.isActive ? "translate-x-4" : "translate-x-0"
-                        }`}
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ${item.isActive ? "translate-x-4" : "translate-x-0"
+                          }`}
                       />
                     </button>
                   </td>
@@ -212,7 +210,7 @@ export default function EditItemsPage() {
                           Edit
                         </button>
                       </Link>
-                      <button 
+                      <button
                         onClick={() => handleDelete(item)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-150"
                         title="Delete Item"

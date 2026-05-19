@@ -26,6 +26,10 @@ export const metadata: Metadata = {
   description:
     "Book your daily tea, coffee, and snacks with ease. A simple office refreshment ordering system.",
   keywords: "tea, coffee, snacks, office booking, refreshments",
+  icons: {
+    icon: "/tandb.jpg",
+    apple: "/tandb.jpg",
+  },
 };
 
 export default function RootLayout({

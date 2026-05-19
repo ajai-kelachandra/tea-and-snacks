@@ -3,7 +3,7 @@
 import { useEffect, ReactNode } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { setUser, clearUser } from "@/features/authSlice";
+import { setUser, clearUser, setLoading } from "@/features/authSlice";
 import { useAppDispatch } from "@/lib/hooks";
 
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "admin@company.com")
@@ -16,6 +16,7 @@ export default function AuthObserver({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        dispatch(setLoading(true));
         const { db } = await import("@/lib/firebase");
         const { doc: firestoreDoc, getDoc: getFirestoreDoc, setDoc: setFirestoreDoc } = await import("firebase/firestore");
         
