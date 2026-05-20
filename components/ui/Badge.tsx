@@ -1,7 +1,7 @@
 "use client";
 
 interface BadgeProps {
-  type: "tea" | "coffee" | "snack" | "active" | "inactive" | "placed" | "prepared" | "cancelled";
+  type: "tea" | "coffee" | "snack" | "active" | "inactive" | "placed" | "cancelled";
   label?: string;
 }
 
@@ -12,7 +12,6 @@ const config: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   inactive: "bg-gray-100 text-gray-600",
   placed: "bg-blue-100 text-blue-800",
-  prepared: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
 };
 
@@ -23,7 +22,6 @@ const labels: Record<string, string> = {
   active: "Active",
   inactive: "Inactive",
   placed: "Placed",
-  prepared: "Prepared",
   cancelled: "Cancelled",
 };
 

@@ -95,7 +95,6 @@ export default function UserOrdersPage() {
                   </div>
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                     order.status === "placed" ? "border-blue-100 text-blue-600 bg-blue-50" :
-                    order.status === "prepared" ? "border-green-100 text-green-600 bg-green-50" :
                     "border-red-100 text-red-600 bg-red-50"
                   }`}>
                     {order.status}

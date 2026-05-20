@@ -148,7 +148,7 @@ export default function LoginForm({ role, redirectTo }: LoginFormProps) {
 
         <p className="text-center text-xs text-gray-400 pt-1">
           {role === "admin"
-            ? "Admin & HR portal access only."
+            ? "Admin & IRO People portal access only."
             : "Employee access for ordering tea & snacks."}
         </p>
       </form>

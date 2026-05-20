@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-export type OrderStatus = "placed" | "prepared" | "cancelled";
+export type OrderStatus = "placed" | "cancelled";
 
 export interface OrderItem {
   itemId: string;
@@ -32,6 +32,7 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   isCleared?: boolean;
+  paymentStatus?: "paid" | "unpaid";
 }
 
 interface OrdersState {
@@ -114,6 +115,15 @@ export const updateOrderStatus = createAsyncThunk(
   }
 );
 
+export const updateOrderPaymentStatus = createAsyncThunk(
+  "orders/updatePaymentStatus",
+  async ({ id, paymentStatus }: { id: string; paymentStatus: "paid" | "unpaid" }) => {
+    const docRef = doc(db, "orders", id);
+    await updateDoc(docRef, { paymentStatus, updatedAt: serverTimestamp() });
+    return { id, paymentStatus };
+  }
+);
+
 const ordersSlice = createSlice({
   name: "orders",
   initialState,
@@ -144,6 +154,11 @@ const ordersSlice = createSlice({
         const { id, status } = action.payload;
         const order = state.orders.find((o) => o.id === id);
         if (order) order.status = status;
+      })
+      .addCase(updateOrderPaymentStatus.fulfilled, (state, action) => {
+        const { id, paymentStatus } = action.payload;
+        const order = state.orders.find((o) => o.id === id);
+        if (order) order.paymentStatus = paymentStatus;
       });
   },
 });

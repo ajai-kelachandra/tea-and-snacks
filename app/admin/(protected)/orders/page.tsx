@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { fetchOrders, updateOrderStatus, OrderStatus, setOrders, Order } from "@/features/ordersSlice";
+import { fetchOrders, updateOrderStatus, updateOrderPaymentStatus, OrderStatus, setOrders, Order } from "@/features/ordersSlice";
 import Badge from "@/components/ui/Badge";
 import { FiSearch, FiFilter, FiClipboard, FiMessageCircle } from "react-icons/fi";
 import { format } from "date-fns";
@@ -11,7 +11,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { calculateOrderCharges } from "@/lib/orderUtils";
 
-const STATUS_OPTIONS: OrderStatus[] = ["placed", "prepared", "cancelled"];
+const STATUS_OPTIONS: OrderStatus[] = ["placed", "cancelled"];
 
 export default function AdminOrdersPage() {
   const dispatch = useAppDispatch();
@@ -72,6 +72,16 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handlePaymentStatusToggle = async (id: string, currentStatus: "paid" | "unpaid") => {
+    const nextStatus = currentStatus === "paid" ? "unpaid" : "paid";
+    try {
+      await dispatch(updateOrderPaymentStatus({ id, paymentStatus: nextStatus })).unwrap();
+      toast.success(`Order marked as ${nextStatus.toUpperCase()}! 💰`);
+    } catch {
+      toast.error("Failed to update payment status.");
+    }
+  };
+
   const handleWhatsAppShare = (order: any) => {
     const charges = orderCharges[order.id] || { items: order.items.map((i: any) => ({ ...i, billableQty: 0 })), extraCharge: 0 };
     const itemsList = charges.items
@@ -92,6 +102,7 @@ export default function AdminOrdersPage() {
     }
 
     message += `*Status:* ${order.status.toUpperCase()}\n` +
+      `*Payment:* ${(order.paymentStatus || "unpaid").toUpperCase()}\n` +
       `*Time:* ${format(new Date(order.createdAt), "hh:mm a, dd MMM")}\n` +
       `*Email:* ${order.userEmail}`;
     
@@ -194,12 +205,13 @@ export default function AdminOrdersPage() {
           <table className="w-full text-sm min-w-[750px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Order ID</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Items</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Extra Charge</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date & Time</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Charge</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Time</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -280,6 +292,22 @@ export default function AdminOrdersPage() {
                           <FiMessageCircle size={16} />
                         </button>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {charges.extraCharge > 0 ? (
+                        <button
+                          onClick={() => handlePaymentStatusToggle(order.id, order.paymentStatus || "unpaid")}
+                          className={`inline-flex items-center gap-1 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-wider transition-all duration-150 active:scale-95 cursor-pointer shadow-sm border ${
+                            order.paymentStatus === "paid"
+                              ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                              : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
+                          }`}
+                        >
+                          {order.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                        </button>
+                      ) : (
+                        <span className="text-gray-400 font-medium">—</span>
+                      )}
                     </td>
                   </tr>
                 );

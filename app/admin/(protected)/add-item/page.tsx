@@ -59,6 +59,19 @@ export default function AddItemPage() {
   }, [activeSession, items, templates]);
 
   const handleToggleTemplate = (templateId: string) => {
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      const isItemDisabled = items.some(
+        (item) => item.name === template.name && !item.isActive
+      );
+      if (isItemDisabled) {
+        toast.error(`"${template.name}" is deactivated in Manage Items. Please activate it first.`, {
+          icon: "🔒",
+        });
+        return;
+      }
+    }
+
     setSelectedIds((prev) =>
       prev.includes(templateId)
         ? prev.filter((id) => id !== templateId)
@@ -129,8 +142,8 @@ export default function AddItemPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Side: Create / Add New Template Form */}
         <div className="lg:col-span-5">
-          <div className="mb-4">
-            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-gray-400">Add New Library Template</h2>
+          <div className="flex items-center h-[38px] mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-gray-400">Ad new Item</h2>
           </div>
           <div className="card p-6 shadow-sm border border-gray-100 bg-white rounded-3xl">
             <ItemForm mode="add" />
@@ -138,32 +151,32 @@ export default function AddItemPage() {
         </div>
 
         {/* Right Side: 2-Tab Session Designer */}
-        <div className="lg:col-span-7 flex flex-col space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-gray-400">Session Menu </h2>
+        <div className="lg:col-span-7">
+          <div className="flex items-center justify-between h-[38px] mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-gray-400">Session Menu</h2>
             
             {/* Session Tabs Selector */}
-            <div className="flex bg-gray-100/80 p-1 rounded-2xl border border-gray-200">
+            <div className="flex bg-gray-100/80 p-0.5 rounded-xl border border-gray-200">
               <button
                 onClick={() => setActiveSession("morning")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 cursor-pointer ${
                   activeSession === "morning"
-                    ? "bg-amber-500 text-white shadow-md shadow-amber-200"
+                    ? "bg-amber-500 text-white shadow-sm"
                     : "text-gray-500 hover:text-gray-800"
                 }`}
               >
-                <FiSun size={14} />
+                <FiSun size={12} />
                 Morning
               </button>
               <button
                 onClick={() => setActiveSession("evening")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 cursor-pointer ${
                   activeSession === "evening"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
+                    ? "bg-indigo-600 text-white shadow-sm"
                     : "text-gray-500 hover:text-gray-800"
                 }`}
               >
-                <FiMoon size={14} />
+                <FiMoon size={12} />
                 Evening
               </button>
             </div>
@@ -209,20 +222,26 @@ export default function AddItemPage() {
                 <p className="text-sm text-gray-400 italic">No templates available. Please create templates using the form on the left first.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-[460px] pr-1 no-scrollbar">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-[460px] p-2 no-scrollbar">
                 {templates.map((template) => {
                   const isSelected = selectedIds.includes(template.id);
+                  const isItemDisabled = items.some(
+                    (item) => item.name === template.name && !item.isActive
+                  );
                   
                   return (
                     <button
                       key={template.id}
                       onClick={() => handleToggleTemplate(template.id)}
-                      className={`group relative flex flex-col items-center gap-2 p-2.5 rounded-2xl border transition-all duration-300 active:scale-95 text-left bg-white
-                        ${isSelected
-                          ? activeSession === "morning"
-                            ? "border-amber-400 shadow-md ring-2 ring-amber-100"
-                            : "border-indigo-400 shadow-md ring-2 ring-indigo-100"
-                          : "border-gray-100 hover:border-gray-300 hover:shadow"
+                      disabled={isItemDisabled}
+                      className={`group relative flex flex-col items-center gap-2 p-2.5 rounded-2xl border transition-all duration-300 text-left bg-white
+                        ${isItemDisabled
+                          ? "opacity-55 cursor-not-allowed border-gray-150 bg-gray-50/50"
+                          : isSelected
+                            ? activeSession === "morning"
+                              ? "border-amber-400 shadow-md ring-2 ring-amber-100 active:scale-95"
+                              : "border-indigo-400 shadow-md ring-2 ring-indigo-100 active:scale-95"
+                            : "border-gray-100 hover:border-gray-300 hover:shadow active:scale-95"
                         }`}
                     >
                       {/* Image Thumbnail */}
@@ -232,13 +251,25 @@ export default function AddItemPage() {
                           alt={template.name}
                           className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
                             isSelected ? "" : "grayscale-[20%]"
-                          }`}
+                          } ${isItemDisabled ? "grayscale" : ""}`}
                         />
 
                         {/* Top corner type indicator */}
                         <div className="absolute top-1 left-1 bg-black/40 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider">
                           {template.type}
                         </div>
+
+                        {/* Deactivated Overlay */}
+                        {isItemDisabled && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center text-center p-1">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-red-400 bg-red-950/80 px-2 py-0.5 rounded-md border border-red-900 shadow">
+                              Disabled
+                            </span>
+                            <span className="text-[7px] text-gray-300 mt-1 font-semibold max-w-[85%] truncate">
+                              In Manage Items
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Info & Selection state */}

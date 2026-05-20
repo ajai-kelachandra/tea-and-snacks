@@ -26,7 +26,7 @@ export interface ProcessedOrderInfo {
 export function calculateOrderCharges(orders: Order[]): Record<string, ProcessedOrderInfo> {
   // Sort active orders chronologically (oldest first) so that the first 2 snacks/teas of the day are free.
   const activeOrders = [...orders]
-    .filter((o) => o.status !== "cancelled")
+    .filter((o) => o.status !== "cancelled" && !o.isCleared)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const userDailyCounts: Record<string, number> = {}; // key: userId_yyyy-MM-dd

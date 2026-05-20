@@ -1,7 +1,7 @@
 "use client";
 
 import LoginForm from "@/components/LoginForm";
-import { FiCoffee, FiShield } from "react-icons/fi";
+import { FiCoffee, FiShield, FiUsers } from "react-icons/fi";
 import Link from "next/link";
 
 export default function AdminLoginPage() {
@@ -25,8 +25,8 @@ export default function AdminLoginPage() {
             </div>
             <h1 className="text-2xl font-bold">Tea & Snacks</h1>
             <div className="flex items-center justify-center gap-1.5 mt-1 text-blue-200">
-              <FiShield size={13} />
-              <p className="text-sm">Admin / HR Portal</p>
+              <FiUsers size={13} />
+              <p className="text-sm">Admin / IRO People Portal</p>
             </div>
           </div>
 

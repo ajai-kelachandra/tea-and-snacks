@@ -34,7 +34,7 @@ export default function UserHeader() {
             onClick={() => router.push("/user/menu")}
           >
             <span className="text-xl font-black text-black tracking-tighter uppercase">IRO</span>
-            <span className="text-[10px] font-black text-[#1d4ed8] tracking-[0.3em] ml-0.5 uppercase">SNACK</span>
+            <span className="text-[10px] font-black text-[#1d4ed8] tracking-[0.3em] ml-0.5 uppercase">PEOPLE</span>
           </div>
 
           {/* Stepper-style Navigation */}
@@ -45,6 +45,14 @@ export default function UserHeader() {
             >
               <div className={`w-1.5 h-1.5 rounded-full transition-colors ${pathname === "/user/menu" ? "bg-[#1d4ed8]" : "bg-gray-200"}`} />
               Snack
+            </button>
+            <div className="w-8 h-[1px] bg-gray-300" />
+            <button 
+              onClick={() => router.push("/user/leaves")}
+              className={`flex items-center gap-2.5 uppercase transition-all ${pathname === "/user/leaves" ? "text-black" : "hover:text-gray-600"}`}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full transition-colors ${pathname === "/user/leaves" ? "bg-[#1d4ed8]" : "bg-gray-200"}`} />
+              Leaves
             </button>
             <div className="w-8 h-[1px] bg-gray-300" />
             <button 

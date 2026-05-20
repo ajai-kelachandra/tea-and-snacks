@@ -1,7 +1,7 @@
 "use client";
 
 import LoginForm from "@/components/LoginForm";
-import { FiCoffee, FiUser } from "react-icons/fi";
+import { FiUser, FiUsers } from "react-icons/fi";
 import Link from "next/link";
 
 export default function UserLoginPage() {
@@ -19,10 +19,10 @@ export default function UserLoginPage() {
           <div className="px-8 py-8 text-center border-b border-gray-100">
             <div className="flex justify-center mb-4">
               <div className="w-14 h-14 bg-[#1d4ed8] rounded-2xl flex items-center justify-center shadow-lg">
-                <FiCoffee size={26} className="text-white" />
+                <FiUsers size={26} className="text-white" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Tea & Snacks</h1>
+            <h1 className="text-2xl font-bold text-gray-900">IRO People</h1>
             <div className="flex items-center justify-center gap-1.5 mt-1 text-gray-500">
               <FiUser size={13} />
               <p className="text-sm">Employee Portal</p>
@@ -33,7 +33,7 @@ export default function UserLoginPage() {
           <div className="px-8 py-8">
             <h2 className="text-lg font-bold text-gray-900 mb-1">Welcome back!</h2>
             <p className="text-sm text-gray-500 mb-6">
-              Sign in to browse and order your favourite tea or snacks.
+              Sign in to manage leaves, view attendance, and order tea & snacks.
             </p>
             <LoginForm role="user" redirectTo="/user/menu" />
           </div>

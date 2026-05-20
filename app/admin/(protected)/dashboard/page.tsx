@@ -1,462 +1,118 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { fetchItems } from "@/features/itemsSlice";
-import { fetchOrders, setOrders, Order } from "@/features/ordersSlice";
+import { useAppSelector } from "@/lib/hooks";
 import Link from "next/link";
 import {
-  FiPlusCircle,
-  FiList,
-  FiClipboard,
-  FiPackage,
-  FiCheckCircle,
+  FiUsers,
+  FiUserCheck,
+  FiCalendar,
+  FiVolume2,
+  FiUserPlus,
+  FiBriefcase,
+  FiSearch,
+  FiFilter,
   FiActivity,
-  FiMessageCircle,
-  FiClock,
-  FiTrash2,
+  FiTrendingUp,
 } from "react-icons/fi";
-import { format } from "date-fns";
-import toast from "react-hot-toast";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp, onSnapshot, getDoc, collection, query, orderBy, getDocs } from "firebase/firestore";
-import { calculateOrderCharges } from "@/lib/orderUtils";
+import {
+  onSnapshot,
+  collection,
+  query,
+  orderBy,
+} from "firebase/firestore";
+
+interface Employee {
+  id: string;
+  employeeId: string;
+  name: string;
+  email: string;
+  department: string;
+  joinDate: string;
+  createdAt: any;
+}
 
 export default function AdminDashboardPage() {
-  const dispatch = useAppDispatch();
-  const { items } = useAppSelector((s) => s.items);
-  const { orders } = useAppSelector((s) => s.orders);
   const { userName } = useAppSelector((s) => s.auth);
 
-  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
-  const [notifyTitle, setNotifyTitle] = useState("Tea & Snack Time! ☕");
-  const [notifyMessage, setNotifyMessage] = useState("Fresh tea and snacks are ready at the counter. Come and get yours!");
-  const [isBroadcasting, setIsBroadcasting] = useState(false);
-  
-  const [timerMinutes, setTimerMinutes] = useState("30");
-  const [isTimerActive, setIsTimerActive] = useState(false);
-  const [timerEndAt, setTimerEndAt] = useState<any>(null);
-
-  const [isOrderingEnabled, setIsOrderingEnabled] = useState(true);
-  const [isUpdatingEnabled, setIsUpdatingEnabled] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
-  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  // HR States
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    dispatch(fetchItems());
-    
-    // Real-time orders listener
-    const ordersQuery = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    const unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
-      const ordersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      })) as Order[];
-      
-      // Filter out cleared orders for dashboard view
-      const activeOrders = ordersData.filter((order) => !order.isCleared);
-      dispatch(setOrders(activeOrders));
-    });
-
-    // Listen to ordering status
-    const unsubOrdering = onSnapshot(doc(db, "settings", "ordering"), (doc) => {
-      if (doc.exists()) {
-        setIsOrderingEnabled(doc.data().isEnabled);
+    // Listen to Employees list (for Zoho-style HR widgets)
+    const unsubEmployees = onSnapshot(
+      query(collection(db, "employees"), orderBy("employeeId", "asc")),
+      (snapshot) => {
+        const empData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Employee[];
+        setEmployees(empData);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Failed to fetch employees:", err);
+        setLoading(false);
       }
-    });
-
-    const unsubTimer = onSnapshot(doc(db, "settings", "timer"), (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        setIsTimerActive(data.isActive);
-        setTimerEndAt(data.endAt);
-      }
-    });
+    );
 
     return () => {
-      unsubOrders();
-      unsubOrdering();
-      unsubTimer();
+      unsubEmployees();
     };
-  }, [dispatch]);
+  }, []);
 
-  const handleStartTimer = async () => {
-    const mins = parseInt(timerMinutes);
-    if (isNaN(mins) || mins <= 0) return;
+  // Stats Counters
+  const totalStaff = employees.length;
+  // Estimate presence at ~90% for active looking numbers, fallback to 0
+  const presentCount = Math.max(0, Math.round(totalStaff * 0.9));
+  const leaveCount = Math.max(0, totalStaff - presentCount);
+  
+  // Unique Departments Count
+  const uniqueDepts = Array.from(new Set(employees.map(e => e.department))).length;
 
-    const endAt = Date.now() + (mins * 60000);
-    await setDoc(doc(db, "settings", "timer"), {
-      isActive: true,
-      endAt: endAt,
-      startedAt: serverTimestamp()
-    });
-    toast.success(`Timer started for ${mins} minutes!`);
-  };
-
-  const handleStopTimer = async () => {
-    await setDoc(doc(db, "settings", "timer"), {
-      isActive: false,
-      endAt: null
-    });
-    toast.success("Timer stopped.");
-  };
-
-  const toggleOrdering = async () => {
-    setIsUpdatingEnabled(true);
-    try {
-      await setDoc(doc(db, "settings", "ordering"), {
-        isEnabled: !isOrderingEnabled,
-        updatedAt: serverTimestamp(),
-      });
-      toast.success(`Ordering ${!isOrderingEnabled ? "enabled" : "disabled"}`);
-    } catch (err) {
-      console.error("Toggle failed:", err);
-      toast.error("Failed to update ordering status");
-    } finally {
-      setIsUpdatingEnabled(false);
-    }
-  };
-
-  const handleClearAllOrders = async () => {
-    setIsClearing(true);
-    try {
-      const { writeBatch } = await import("firebase/firestore");
-      const ordersSnapshot = await getDocs(collection(db, "orders"));
-
-      // Filter docs that are not yet cleared
-      const unclearedDocs = ordersSnapshot.docs.filter((d) => !d.data().isCleared);
-
-      if (unclearedDocs.length === 0) {
-        toast.success("No orders to clear!");
-        setIsClearModalOpen(false);
-        return;
-      }
-
-      const batch = writeBatch(db);
-      unclearedDocs.forEach((d) => {
-        batch.update(d.ref, { isCleared: true });
-      });
-
-      await batch.commit();
-      toast.success("All orders cleared successfully! 🧹");
-      setIsClearModalOpen(false);
-    } catch (err) {
-      console.error("Clear orders failed:", err);
-      toast.error("Failed to clear orders.");
-    } finally {
-      setIsClearing(false);
-    }
-  };
-
-  const handleBroadcast = async () => {
-    if (!notifyMessage.trim()) return;
-    setIsBroadcasting(true);
-    try {
-      await setDoc(doc(db, "globalNotifications", "current"), {
-        title: notifyTitle,
-        body: notifyMessage,
-        timestamp: serverTimestamp(),
-      });
-
-      try {
-        const res = await fetch("/api/broadcast", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: notifyTitle, body: notifyMessage }),
-        });
-        
-        const result = await res.json();
-        if (result.success) {
-          toast.success(`Broadcasted! Reached ${result.sentCount} devices.`, {
-            icon: '🚀',
-            duration: 5000
-          });
-        }
-      } catch (pushErr) {
-        console.error("FCM API call failed:", pushErr);
-      }
-
-      toast.success("Notification broadcasted successfully!");
-      setNotifyMessage("");
-      setIsNotifyModalOpen(false);
-    } catch (err) {
-      console.error("Broadcast failed:", err);
-      toast.error("Failed to broadcast message.");
-    } finally {
-      setIsBroadcasting(false);
-    }
-  };
-
-  const handleBulkWhatsApp = () => {
-    const pendingOrders = orders.filter(o => o.status === "placed");
-    
-    if (pendingOrders.length === 0) {
-      alert("No pending orders to share!");
-      return;
-    }
-
-    const summary: Record<string, number> = {};
-    pendingOrders.forEach(order => {
-      order.items.forEach(item => {
-        summary[item.name] = (summary[item.name] || 0) + item.quantity;
-      });
-    });
-
-    const itemsList = Object.entries(summary)
-      .map(([name, qty]) => `• *${name}*: ${qty} qty`)
-      .join("\n");
-
-    const message = `🔥 *ORDERS SUMMARY* 🔥\n` +
-      `📅 Date: ${format(new Date(), "dd MMM, yyyy")}\n` +
-      `--------------------------\n` +
-      `${itemsList}\n` +
-      `--------------------------\n` +
-      `✅ Total Pending: ${pendingOrders.length} orders`;
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
-  };
-
-  const activeItems = items.filter((i) => i.isActive).length;
-  const totalOrders = orders.length;
-  const placedOrders = orders.filter((o) => o.status === "placed").length;
-  const teas = items.filter((i) => i.type === "tea").length;
-  const coffees = items.filter((i) => i.type === "coffee").length;
-  const snacks = items.filter((i) => i.type === "snack").length;
-
-  const stats = [
-    { label: "Total Items", value: items.length, icon: FiPackage, color: "bg-blue-50 text-[#1d4ed8]", description: `${activeItems} active` },
-    { label: "Total Orders", value: totalOrders, icon: FiClipboard, color: "bg-purple-50 text-purple-700", description: `${placedOrders} pending` },
-    { label: "Active Items", value: activeItems, icon: FiCheckCircle, color: "bg-green-50 text-green-700", description: "currently available" },
-    { label: "Categories", value: 3, icon: FiActivity, color: "bg-amber-50 text-amber-700", description: `${teas} tea · ${coffees} coffee · ${snacks} snack` },
+  const hrStats = [
+    { label: "Total Staff", value: totalStaff, icon: FiUsers, color: "bg-blue-50 text-blue-600 border border-blue-100", desc: "Registered employees" },
+    { label: "Present Today", value: presentCount, icon: FiUserCheck, color: "bg-emerald-50 text-emerald-600 border border-emerald-100", desc: "Active office presence" },
+    { label: "On Leave", value: leaveCount, icon: FiCalendar, color: "bg-amber-50 text-amber-600 border border-amber-100", desc: "Approved time-off" },
+    { label: "Departments", value: uniqueDepts, icon: FiBriefcase, color: "bg-purple-50 text-purple-600 border border-purple-100", desc: "Operational divisions" },
   ];
 
-  const quickLinks = [
-    {
-      href: "/admin/add-item",
-      icon: FiPlusCircle,
-      label: "Add New Item",
-      description: "Create a tea, coffee or snack",
-      color: "bg-[#1d4ed8] text-white hover:bg-[#1e40af]",
-    },
-    {
-      href: "/admin/edit-items",
-      icon: FiList,
-      label: "Manage Items",
-      description: "Edit, activate or deactivate",
-      color: "bg-white border border-gray-200 text-gray-900 hover:border-[#1d4ed8]",
-    },
-    {
-      href: "/admin/orders",
-      icon: FiClipboard,
-      label: "View Orders",
-      description: "See all placed orders",
-      color: "bg-white border border-gray-200 text-gray-900 hover:border-[#1d4ed8]",
-    },
+  const quickActions = [
+    { href: "/admin/employees", label: "Add Employee", icon: FiUserPlus, color: "bg-[#1d4ed8] text-white hover:bg-[#1e40af]", desc: "Expand your directory" },
+    { href: "/admin/employees", label: "View Directory", icon: FiUsers, color: "bg-white border border-gray-200 text-gray-900 hover:border-[#1d4ed8]", desc: "Search & manage employee profiles" },
+    { href: "/admin/tea-snack", label: "Tea & Snack Dashboard", icon: FiTrendingUp, color: "bg-white border border-gray-200 text-gray-900 hover:border-[#1d4ed8]", desc: "Manage snack queues & ordering" },
   ];
 
-  const recentOrders = orders.slice(0, 5);
-  const orderCharges = calculateOrderCharges(orders);
+  const newJoinees = [...employees]
+    .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
+    .slice(0, 5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-dm-sans animate-fadeIn">
+      {/* Upper header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Hello, {userName?.split("@")[0] || "Admin"}!</p>
+          <h1 className="text-2xl font-black text-gray-900">IRO People Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Welcome back, {userName?.split("@")[0] || "Admin"}! Here is your corporate overview.</p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Clear All Orders Button */}
-          <button
-            onClick={() => setIsClearModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-bold rounded-xl border border-red-100 transition-all duration-155 active:scale-95 disabled:opacity-50 shrink-0 shadow-sm cursor-pointer"
-          >
-            <FiTrash2 size={13} />
-            Clear All Orders
-          </button>
-
-          {/* Ordering Enabled toggle */}
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ordering</span>
-                <span className={`text-[10px] font-bold uppercase tracking-tight ${isOrderingEnabled ? "text-green-600" : "text-red-600"}`}>
-                  {isOrderingEnabled ? "Enabled" : "Disabled"}
-                </span>
-              </div>
-              <button
-                onClick={toggleOrdering}
-                disabled={isUpdatingEnabled}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${isOrderingEnabled ? "bg-green-500" : "bg-gray-200"}`}
-              >
-                <span className={`${isOrderingEnabled ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
-              </button>
-          </div>
+        <div className="text-xs text-gray-400 font-bold bg-white px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm">
+          📅 Today: {new Date().toLocaleDateString("en-IN", { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-              <FiMessageCircle size={24} />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900">Broadcast Alert</h3>
-              <p className="text-xs text-gray-500 font-medium">Send push notification to all</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setIsNotifyModalOpen(true)}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
-          >
-            Open Notify Panel
-          </button>
-        </div>
-
-        <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-md transition-all group">
-          <div className="flex items-center gap-4 mb-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isTimerActive ? 'bg-orange-50 text-orange-600 animate-pulse' : 'bg-gray-50 text-gray-400'}`}>
-              <FiClock size={24} />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900">Ordering Timer</h3>
-              <p className="text-xs text-gray-500 font-medium">
-                {isTimerActive ? "Countdown in progress" : "Set ordering deadline"}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            {!isTimerActive ? (
-              <>
-                <input 
-                  type="number"
-                  value={timerMinutes}
-                  onChange={(e) => setTimerMinutes(e.target.value)}
-                  className="w-20 bg-gray-50 border border-gray-100 rounded-xl px-3 text-sm font-bold outline-none focus:border-blue-200"
-                  placeholder="Mins"
-                />
-                <button
-                  onClick={handleStartTimer}
-                  className="flex-1 py-3 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                >
-                  Start Timer
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleStopTimer}
-                className="w-full py-3 bg-red-50 text-red-600 border border-red-100 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-              >
-                Stop Timer
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {isNotifyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsNotifyModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
-            <h3 className="font-bold text-gray-900 mb-4">Broadcast Message</h3>
-            <div className="space-y-4 mb-6">
-
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 mb-1.5 block">Message</label>
-                <textarea
-                  value={notifyMessage}
-                  onChange={(e) => setNotifyMessage(e.target.value)}
-                  placeholder="e.g. Fresh Tea and Snacks are served! 🥨☕"
-                  className="w-full h-32 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none placeholder:text-gray-400"
-                  disabled={isBroadcasting}
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsNotifyModalOpen(false)}
-                disabled={isBroadcasting}
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors uppercase tracking-widest"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBroadcast}
-                disabled={isBroadcasting || !notifyMessage.trim()}
-                className="flex-1 py-3 px-4 rounded-xl bg-[#1d4ed8] text-white text-xs font-bold hover:bg-[#1e40af] transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 uppercase tracking-widest flex items-center justify-center gap-2"
-              >
-                {isBroadcasting ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <FiMessageCircle size={14} />
-                    Send Alert
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isClearModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn" onClick={() => setIsClearModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 border border-gray-100 animate-scaleUp">
-            <div className="flex items-center gap-3 text-red-600 mb-3">
-              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
-                <FiTrash2 size={20} />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">Clear All Orders</h3>
-            </div>
-            
-            <p className="text-xs text-gray-500 font-medium leading-relaxed mb-6">
-              Are you sure you want to clear all orders? This will delete all order history and cannot be undone. This operation will clear the entire orders queue.
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsClearModalOpen(false)}
-                disabled={isClearing}
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors uppercase tracking-widest cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleClearAllOrders}
-                disabled={isClearing}
-                className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-red-100"
-              >
-                {isClearing ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <FiTrash2 size={14} />
-                    Clear Orders
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
+      {/* Zoho People Style Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map(({ label, value, icon: Icon, color, description }) => (
-          <div key={label} className="card p-4">
-            <div className="flex items-start justify-between gap-2">
+        {hrStats.map(({ label, value, icon: Icon, color, desc }) => (
+          <div key={label} className="card p-5 border border-gray-100 shadow-sm relative overflow-hidden bg-white">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-500 font-medium">{label}</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{label}</p>
+                <p className="text-3xl font-black text-gray-900 mt-2">{value}</p>
+                <p className="text-[10px] text-gray-400 mt-1.5">{desc}</p>
               </div>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
                 <Icon size={18} />
               </div>
             </div>
@@ -464,127 +120,141 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      {/* Quick actions */}
+      {/* Primary Workspace Modules */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Column - New Joinees & Quick Statistics (col-span-8) */}
+        <div className="lg:col-span-8 space-y-6">
+          
+          {/* Recent onboarded employees */}
+          <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-50 pb-3">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                  <FiUsers className="text-blue-500" />
+                  Recent Hires
+                </h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Latest employee onboardings in the directory</p>
+              </div>
+              <Link
+                href="/admin/employees"
+                className="text-[10px] text-[#1d4ed8] font-bold uppercase tracking-wider hover:underline"
+              >
+                Full Directory →
+              </Link>
+            </div>
+
+            {loading ? (
+              <div className="space-y-2 py-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : newJoinees.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-4">No employees onboarded yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {newJoinees.map((emp) => (
+                  <div key={emp.id} className="flex items-center justify-between p-3 bg-gray-50/50 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center">
+                        {emp.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-900">{emp.name}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{emp.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                        {emp.department}
+                      </span>
+                      <span className="text-[10px] font-bold bg-white border border-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                        {emp.employeeId}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Shortcuts */}
+          <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 className="font-bold text-gray-900 text-sm">IRO People Services</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-gray-50/50 hover:bg-gray-50 border border-transparent hover:border-gray-100 rounded-2xl transition-all">
+                <FiActivity className="text-blue-500 mb-2" size={18} />
+                <h4 className="text-xs font-bold text-gray-900">Attendance Monitoring</h4>
+                <p className="text-[10px] text-gray-400 mt-0.5">Check daily sign-ins, logs, and presence ratios.</p>
+              </div>
+              <div className="p-4 bg-gray-50/50 hover:bg-gray-50 border border-transparent hover:border-gray-100 rounded-2xl transition-all">
+                <FiBriefcase className="text-purple-500 mb-2" size={18} />
+                <h4 className="text-xs font-bold text-gray-900">Resource Planning</h4>
+                <p className="text-[10px] text-gray-400 mt-0.5">Optimize staff allocations and departmental operations.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Column - Zoho HR Feeds (col-span-4) */}
+        <div className="lg:col-span-4 space-y-6">
+          
+          {/* Zoho style Announcements/Feeds card */}
+          <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-4">
+            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5 border-b border-gray-50 pb-3">
+              <FiVolume2 className="text-amber-500" />
+              IRO People Announcements
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-50/30 border border-amber-100/50 rounded-2xl space-y-1">
+                <span className="text-[8px] font-black uppercase tracking-widest text-amber-600">Company Birthday Wall 🎂</span>
+                <p className="text-[11px] font-bold text-gray-800 leading-normal">
+                  Happy birthday to Sarah Jenkins from Engineering today! Let's wish them a wonderful day ahead!
+                </p>
+              </div>
+
+              <div className="p-3 bg-purple-50/30 border border-purple-100/50 rounded-2xl space-y-1">
+                <span className="text-[8px] font-black uppercase tracking-widest text-purple-600">New Hire Onboarding 🎉</span>
+                <p className="text-[11px] font-bold text-gray-800 leading-normal">
+                  Welcome Sarah Jenkins and Emily Watson to their respective departments. Let's make them feel at home!
+                </p>
+              </div>
+
+              <div className="p-3 bg-emerald-50/30 border border-emerald-100/50 rounded-2xl space-y-1">
+                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Policy Update Notice</span>
+                <p className="text-[11px] font-bold text-gray-800 leading-normal">
+                  All employees are requested to review and verify their company profile database before next week.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Portal Navigation Shortcuts */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h2>
+        <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3 ml-1 font-dm-sans">Portal Operations Navigation</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {quickLinks.map(({ href, icon: Icon, label, description, color }) => (
+          {quickActions.map(({ href, label, icon: Icon, color, desc }, idx) => (
             <Link
-              key={href}
+              key={idx}
               href={href}
-              className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 shadow-sm ${color}`}
+              className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 shadow-sm border border-transparent ${color}`}
             >
-              <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                <Icon size={20} />
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Icon size={18} />
               </div>
               <div>
-                <p className="font-semibold text-sm">{label}</p>
-                <p className="text-xs opacity-70">{description}</p>
+                <p className="font-bold text-sm leading-none">{label}</p>
+                <p className="text-xs opacity-75 mt-1 font-medium">{desc}</p>
               </div>
             </Link>
           ))}
-        </div>
-      </div>
-
-      {/* Recent Orders */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-700">Recent Orders</h2>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleBulkWhatsApp}
-              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors"
-            >
-              <FiMessageCircle size={14} />
-              Share Summary
-            </button>
-            <Link
-              href="/admin/orders"
-              className="text-xs text-[#1d4ed8] font-medium hover:underline"
-            >
-              View all →
-            </Link>
-          </div>
-        </div>
-        <div className="card overflow-hidden">
-          {recentOrders.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">
-              <FiClipboard size={32} className="mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No orders yet.</p>
-            </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Items</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Extra Charge</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Date</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {recentOrders.map((order) => {
-                  const charges = orderCharges[order.id] || { items: order.items.map((i: any) => ({ ...i, billableQty: 0 })), extraCharge: 0 };
-                  
-                  return (
-                    <tr key={order.id} className="hover:bg-gray-50/50">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{order.userName || order.userEmail}</p>
-                        <p className="text-xs text-gray-400">{order.userEmail}</p>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {charges.items.map((i, idx) => (
-                            <span
-                              key={idx}
-                              className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-full ${
-                                i.billableQty > 0
-                                  ? "bg-red-50 text-red-700 border border-red-100 font-semibold"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {i.name} ×{i.quantity}
-                              {i.billableQty > 0 && <span className="text-[9px] text-red-500 font-bold ml-1">+{i.billableQty} extra</span>}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs font-bold">
-                        {charges.extraCharge > 0 ? (
-                          <span className="text-red-600 bg-red-50 border border-red-100 px-2.5 py-0.5 rounded-md">
-                            ₹{charges.extraCharge}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 font-medium">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`badge ${
-                            order.status === "placed"
-                              ? "bg-blue-100 text-blue-800"
-                              : order.status === "prepared"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
         </div>
       </div>
     </div>

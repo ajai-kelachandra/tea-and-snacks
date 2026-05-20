@@ -15,11 +15,15 @@ import {
   FiMenu,
   FiX,
   FiCoffee,
+  FiUsers,
+  FiChevronDown,
+  FiChevronUp,
+  FiCalendar,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 const navLinks = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: FiGrid },
+  { href: "/admin/tea-snack", label: "Snack Dashboard", icon: FiCoffee },
   { href: "/admin/add-item", label: "Add Item", icon: FiPlusCircle },
   { href: "/admin/edit-items", label: "Manage Items", icon: FiList },
   { href: "/admin/orders", label: "View Orders", icon: FiClipboard },
@@ -30,6 +34,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { userName } = useAppSelector((s) => s.auth);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [teaSnackOpen, setTeaSnackOpen] = useState(true);
 
   const handleLogout = async () => {
     localStorage.removeItem("mock_user");
@@ -56,10 +61,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
           <div className="w-9 h-9 bg-[#1d4ed8] rounded-lg flex items-center justify-center">
-            <FiCoffee className="text-white" size={18} />
+            <FiUsers className="text-white" size={18} />
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm leading-none">Iro Snacks</p>
+            <p className="font-bold text-gray-900 text-sm leading-none">IRO People</p>
             <p className="text-xs text-gray-400 mt-0.5">Admin Panel</p>
           </div>
           <button
@@ -71,25 +76,91 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="px-3 py-4 space-y-1 overflow-y-auto min-h-0">
-          {navLinks.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150
-                  ${active
-                    ? "bg-[#1d4ed8] text-white shadow-sm"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  }`}
-              >
-                <Icon size={16} />
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="px-3 py-4 space-y-3 overflow-y-auto min-h-0">
+          {/* Main Dashboard Category */}
+          <div className="space-y-1">
+            <Link
+              href="/admin/dashboard"
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors duration-150
+                ${pathname === "/admin/dashboard"
+                  ? "bg-[#1d4ed8] text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+            >
+              <FiGrid size={15} />
+              <span>Main Dashboard</span>
+            </Link>
+          </div>
+
+          {/* Tea & Snack Category */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setTeaSnackOpen(!teaSnackOpen)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <FiCoffee size={15} />
+                <span>Tea & Snack</span>
+              </div>
+              {teaSnackOpen ? <FiChevronUp size={12} className="text-gray-400" /> : <FiChevronDown size={12} className="text-gray-400" />}
+            </button>
+            
+            {teaSnackOpen && (
+              <div className="space-y-1 pl-1.5 animate-fadeIn">
+                {navLinks.map(({ href, label, icon: Icon }) => {
+                  const active = pathname === href;
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors duration-150
+                        ${active
+                          ? "bg-[#1d4ed8] text-white shadow-sm"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                    >
+                      <Icon size={14} />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Employees Category */}
+          <div className="space-y-1">
+            <Link
+              href="/admin/employees"
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors duration-150
+                ${pathname === "/admin/employees"
+                  ? "bg-[#1d4ed8] text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+            >
+              <FiUsers size={15} />
+              <span>Employees</span>
+            </Link>
+          </div>
+
+          {/* Leave & Attendance Category */}
+          <div className="space-y-1">
+            <Link
+              href="/admin/attendance"
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors duration-150
+                ${pathname === "/admin/attendance"
+                  ? "bg-[#1d4ed8] text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+            >
+              <FiCalendar size={15} />
+              <span>Leave & Attendance</span>
+            </Link>
+          </div>
         </nav>
 
         {/* Logout - Pushed to bottom */}

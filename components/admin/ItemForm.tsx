@@ -36,7 +36,6 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || "");
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
-  const [timeSlot, setTimeSlot] = useState<TimeSlot>(initialData?.timeSlot || "morning");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -98,7 +97,7 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
         price: 0,
         imageUrl: finalImageUrl,
         isActive,
-        timeSlot,
+        timeSlot: "" as TimeSlot,
       };
 
       if (mode === "add") {
@@ -168,15 +167,7 @@ export default function ItemForm({ initialData, mode }: ItemFormProps) {
         )}
       </div>
 
-      <Select
-        label="Time Slot"
-        id="item-time-slot"
-        value={timeSlot}
-        onChange={(e) => setTimeSlot(e.target.value as TimeSlot)}
-      >
-        <option value="morning">Morning</option>
-        <option value="evening">Evening</option>
-      </Select>
+
 
       {/* Image Section - DISABLED UPLOAD (No Firebase Storage) */}
       <div>

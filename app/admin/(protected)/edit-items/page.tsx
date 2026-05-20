@@ -143,9 +143,6 @@ export default function EditItemsPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">
                   Type
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
-                  Time Slot
-                </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Status
                 </th>
@@ -179,11 +176,7 @@ export default function EditItemsPage() {
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <Badge type={item.type} />
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-xs text-gray-500 capitalize">
-                      {item.timeSlot || "all-day"}
-                    </span>
-                  </td>
+
                   <td className="px-4 py-3">
                     <button
                       onClick={() => handleToggle(item)}
