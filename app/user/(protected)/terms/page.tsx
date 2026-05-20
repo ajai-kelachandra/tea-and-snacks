@@ -7,11 +7,11 @@ export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto py-12 px-6 font-dm-sans">
       <Link 
-        href="/user/menu" 
+        href="/user/home" 
         className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-10"
       >
         <FiArrowLeft size={14} />
-        Back to Menu
+        Back to Home
       </Link>
 
       <div className="space-y-12">
@@ -28,7 +28,7 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-black text-black tracking-tight">1. Eligibility</h2>
           <p className="text-sm text-gray-500 leading-relaxed">
-            Iro Snack is an internal platform exclusively for employees and authorized personnel. Access is granted via official corporate credentials.
+            IRO People is an internal platform exclusively for employees and authorized personnel. Access is granted via official corporate credentials.
           </p>
         </section>
 

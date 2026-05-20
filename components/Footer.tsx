@@ -12,30 +12,30 @@ export default function Footer() {
           <div className="flex items-center gap-3">
             <div className="flex flex-col leading-none uppercase">
               <span className="text-xl font-black text-black tracking-tighter uppercase">IRO</span>
-              <span className="text-[10px] font-black text-[#1d4ed8] tracking-[0.3em] ml-0.5 uppercase">SNACK</span>
+              <span className="text-[10px] font-black text-[#1d4ed8] tracking-[0.3em] ml-0.5 uppercase">PEOPLE</span>
             </div>
             <div className="w-[1px] h-4 bg-gray-200" />
             <span className="text-xs text-gray-400 font-medium tracking-tight">
-              Iro Snack · Office Refreshments
+              IRO People · Workplace HRMS & Pantry
             </span>
           </div>
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
             <Link href="/user/privacy" className="hover:text-black transition-colors">Privacy</Link>
             <Link href="/user/terms" className="hover:text-black transition-colors">Terms</Link>
-            <a href="mailto:support@irosnack.com" className="hover:text-black transition-colors">Contact</a>
+            <a href="mailto:ajai.kc@iroidtechnologies.com" className="hover:text-black transition-colors">Contact</a>
           </div>
         </div>
 
         {/* Unofficial Banner */}
         <div className="bg-gray-50 rounded-2xl p-6 text-[11px] text-gray-500 leading-relaxed border border-gray-100">
           <span className="font-black text-gray-700 mr-1">Internal.</span> 
-          This is an internal office application for tracking refreshment orders. Not affiliated with any commercial food delivery service. 
+          This is an internal office application for tracking corporate attendance, leave calendars, daily timesheets, and pantry snacks.
           A community project for efficient office management.
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-[10px] font-medium text-gray-300 uppercase tracking-[0.15em] pt-6 border-t border-gray-50">
-          <span>© 2026 Iro Snack</span>
+          <span>© 2026 IRO People</span>
           <div className="flex items-center gap-3">
             <span>One team</span>
             <span className="w-1 h-1 rounded-full bg-gray-200" />

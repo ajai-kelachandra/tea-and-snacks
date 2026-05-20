@@ -3,40 +3,83 @@
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchItems } from "@/features/itemsSlice";
+import { setOrders, Order } from "@/features/ordersSlice";
 import MenuCard from "@/components/user/MenuCard";
 import CartDrawer from "@/components/user/CartDrawer";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
-import { FiAlertCircle, FiSearch, FiShoppingCart, FiSun, FiCoffee, FiBox, FiClock, FiMoon } from "react-icons/fi";
+import { doc, onSnapshot, collection, query, orderBy } from "firebase/firestore";
+import { 
+  FiAlertCircle, 
+  FiSearch, 
+  FiShoppingCart, 
+  FiSun, 
+  FiCoffee, 
+  FiBox, 
+  FiClock, 
+  FiUser, 
+  FiPlus
+} from "react-icons/fi";
+import { addToCart } from "@/features/cartSlice";
+import toast from "react-hot-toast";
 
 type TabFilter = "all" | "beverages" | "snack";
 
+interface Employee {
+  id: string;
+  employeeId: string;
+  name: string;
+  email: string;
+  department: string;
+  jobTitle: string;
+}
+
 export default function UserMenuPage() {
   const dispatch = useAppDispatch();
-  const { items, loading } = useAppSelector((s) => s.items);
-  const { userName } = useAppSelector((s) => s.auth);
+  const { items, loading: itemsLoading } = useAppSelector((s) => s.items);
+  const { userName, userEmail, uid } = useAppSelector((s) => s.auth);
+  const { orders } = useAppSelector((s) => s.orders);
   const cartItems = useAppSelector((s) => s.cart.items);
   const totalQty = cartItems.reduce((s, i) => s + i.quantity, 0);
 
+  // Custom states
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [employeeLoading, setEmployeeLoading] = useState(true);
   const [tab, setTab] = useState<TabFilter>("beverages");
   const [search, setSearch] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [isOrderingEnabled, setIsOrderingEnabled] = useState(true);
-  const [activeNotification, setActiveNotification] = useState<{ title: string; body: string; timestamp: any } | null>(null);
-  const [showNotifyBtn, setShowNotifyBtn] = useState(false);
   const [timerEndAt, setTimerEndAt] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [activeSession, setActiveSession] = useState<"morning" | "evening">("morning");
 
-  // Function to refresh/request token
-  const refreshPushToken = () => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('request-push-token'));
-    }
-  };
+  // 1. Fetch employee profile matching the logged-in email
+  useEffect(() => {
+    if (!userEmail) return;
 
+    const unsub = onSnapshot(
+      collection(db, "employees"),
+      (snapshot) => {
+        const match = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() } as any))
+          .find((emp) => emp.email?.toLowerCase() === userEmail.toLowerCase());
+
+        if (match) {
+          setEmployee(match);
+        }
+        setEmployeeLoading(false);
+      },
+      (err) => {
+        console.error("Failed to load employee details:", err);
+        setEmployeeLoading(false);
+      }
+    );
+
+    return () => unsub();
+  }, [userEmail]);
+
+  // 2. Fetch/listen to items, orders, settings, and timers
   useEffect(() => {
     dispatch(fetchItems());
 
@@ -50,35 +93,7 @@ export default function UserMenuPage() {
       }
     });
 
-    // Listen to latest global notification for the banner
-    const unsubNotify = onSnapshot(
-      doc(db, "globalNotifications", "current"),
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          if (data.timestamp) {
-            const sentTime = data.timestamp.toMillis ? data.timestamp.toMillis() : new Date(data.timestamp).getTime();
-            const now = Date.now();
-
-            // Show banner if notification is less than 30 minutes old
-            if (now - sentTime < 1800000) {
-              setActiveNotification({
-                title: data.title,
-                body: data.body,
-                timestamp: sentTime
-              });
-            } else {
-              setActiveNotification(null);
-            }
-          }
-        }
-      },
-      (error) => {
-        console.error("🔥 User Menu Notification Listener Error:", error);
-      }
-    );
-
-    // Listen to timer
+    // Listen to timer settings
     const unsubTimer = onSnapshot(doc(db, "settings", "timer"), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
@@ -90,14 +105,26 @@ export default function UserMenuPage() {
       }
     });
 
+    // Listen to orders to count daily pantry limit dynamically
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const unsubOrders = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      })) as Order[];
+      dispatch(setOrders(ordersData));
+    });
+
     return () => {
       unsubOrdering();
-      unsubNotify();
       unsubTimer();
+      unsubOrders();
     };
   }, [dispatch]);
 
-  // Countdown Logic
+  // 3. Countdown timer logic
   useEffect(() => {
     if (!isTimerActive || !timerEndAt) {
       setTimeLeft("");
@@ -127,27 +154,66 @@ export default function UserMenuPage() {
     return () => clearInterval(interval);
   }, [isTimerActive, timerEndAt]);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setShowNotifyBtn(Notification.permission === 'default');
-    }
-  }, []);
+  // 4. Calculate today's pantry refreshment consumption
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
-  const requestNotifyPermission = async () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      const permission = await Notification.requestPermission();
-      setShowNotifyBtn(permission === 'default');
-      if (permission === 'granted') {
-        refreshPushToken();
+  const myTodayOrders = orders.filter(
+    (o) => 
+      o.userId === uid && 
+      o.status !== "cancelled" && 
+      !o.isCleared && 
+      new Date(o.createdAt).getTime() >= startOfToday.getTime()
+  );
+
+  let itemsConsumedToday = 0;
+  myTodayOrders.forEach((order) => {
+    order.items.forEach((item) => {
+      if (item.type === "tea" || item.type === "snack" || item.type === "coffee") {
+        itemsConsumedToday += item.quantity;
       }
-    }
-  };
+    });
+  });
 
+  const dailyFreeLimit = 2;
+  const remainingAllowances = Math.max(0, dailyFreeLimit - itemsConsumedToday);
+
+  // 5. Gather last 4 distinct recently ordered items for Quick Reorder
+  const recentOrders = orders
+    .filter((o) => o.userId === uid && o.status !== "cancelled")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const recentItems: { id: string; name: string; type: any; imageUrl: string }[] = [];
   const activeItems = items.filter((i) => i.isActive);
 
-  // Filter items by current selected session
+  recentOrders.forEach((o) => {
+    o.items.forEach((oi) => {
+      const matched = activeItems.find((ai) => ai.id === oi.itemId);
+      if (matched && recentItems.length < 4 && !recentItems.some((ri) => ri.id === matched.id)) {
+        if (matched.timeSlot === activeSession || matched.timeSlot === "all-day") {
+          recentItems.push({
+            id: matched.id,
+            name: matched.name,
+            type: matched.type,
+            imageUrl: matched.imageUrl,
+          });
+        }
+      }
+    });
+  });
+
+  const handleQuickReorder = (item: { id: string; name: string; type: any; imageUrl: string }) => {
+    if (!isOrderingEnabled) {
+      toast.error("Pantry ordering is currently closed.");
+      return;
+    }
+    dispatch(addToCart({ id: item.id, name: item.name, type: item.type, imageUrl: item.imageUrl }));
+    toast.success(`${item.name} added!`, { duration: 1200 });
+  };
+
+  // 6. Filtering items by session slot
   const sessionItems = activeItems.filter((item) => {
-    return item.timeSlot === activeSession;
+    return item.timeSlot === activeSession || item.timeSlot === "all-day" || !item.timeSlot;
   });
 
   const filtered = sessionItems.filter((item) => {
@@ -162,190 +228,176 @@ export default function UserMenuPage() {
     return matchTab && matchSearch;
   });
 
-  const tabs = [
-    { id: "beverages" as TabFilter, label: "Beverages", icon: FiCoffee },
-    { id: "snack" as TabFilter, label: "Snacks", icon: FiBox },
-  ];
-
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  };
-
-  const fullText = "Savor the moment...";
-  const [displayText, setDisplayText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
   return (
     <>
-      <div className="space-y-6">
-        {/* Global Notification Banner */}
-        {/* {activeNotification && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-6 mt-4 p-5 bg-[#1d4ed8] rounded-3xl flex items-start gap-4 text-white shadow-xl shadow-blue-100 border border-blue-400/20 relative overflow-hidden group"
-          >
-            <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700" />
-            
-            <div className="mt-1 w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-              <FiCoffee size={20} className="text-white" />
-            </div>
-            <div className="flex-1 relative z-10">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100">Live Announcement</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              </div>
-              <p className="text-base font-bold mb-1 leading-tight">{activeNotification.title}</p>
-              <p className="text-xs text-blue-50/80 leading-relaxed font-medium mb-3">{activeNotification.body}</p>
-              
-              {showNotifyBtn && (
-                <button 
-                  onClick={requestNotifyPermission}
-                  className="bg-white/20 hover:bg-white/30 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all active:scale-95 border border-white/10"
-                >
-                  Enable Mobile Alerts
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )} */}
-
-        {/* Ordering Status Banner */}
+      <div className="space-y-6 pb-12 font-dm-sans text-gray-800">
+        
+        {/* Closed/Warning Notification Banner - Extremely Clean & Flat */}
         {!isOrderingEnabled && (
-          <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700">
-            <FiAlertCircle size={20} className="shrink-0" />
-            <div>
-              <p className="text-sm font-bold">Ordering is currently closed</p>
-              <p className="text-xs opacity-80">The admin has disabled new orders for now. Please check back later!</p>
-            </div>
+          <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700 text-xs">
+            <FiAlertCircle size={16} className="shrink-0 text-red-500" />
+            <p className="font-medium">
+              <strong>Ordering Closed</strong> — The pantry is currently suspended. New bookings are locked.
+            </p>
           </div>
         )}
 
-        {/* Timer/Header Section */}
-        <div className="py-4 px-6">
-          <div className="flex items-center justify-between gap-4">
-            {/* Greeting (always shown) */}
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black leading-tight">
-                {greeting()}, {userName?.split(" ")[0]} 👋
-              </h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                {activeSession === "morning" ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    Morning Menu Active (Teas & Snacks)
-                  </>
-                ) : (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                    Evening Menu Active (Coffees & Snacks)
-                  </>
+        {/* Clean Minimalist Corporate Header Row */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Pantry Perks</h1>
+            </div>
+            <p className="text-xs text-gray-500 font-medium">
+              {employee ? `${employee.name} • ${employee.jobTitle} (${employee.department})` : userName || "Office Staff"}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 text-xs border-t md:border-t-0 md:border-l border-gray-150 pt-4 md:pt-0 md:pl-6">
+            <div className="space-y-1">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Allowance</span>
+              <p className="font-semibold text-gray-900">
+                {remainingAllowances} of 2 free slots remaining
+                {itemsConsumedToday > 2 && (
+                  <span className="text-red-600 font-bold ml-1.5">(Extra charges: ₹{(itemsConsumedToday - 2) * 12})</span>
                 )}
               </p>
             </div>
 
-            {/* Timer (shown on right when active) */}
-            {isTimerActive && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-end gap-1 shrink-0"
-              >
-                <div className="flex items-center gap-1.5">
-                  <FiClock size={13} className="animate-pulse text-orange-500" />
-                  <span className="text-xl font-black tabular-nums tracking-tight text-black">
-                    {timeLeft || "00:00:00"}
-                  </span>
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">
-                  Ordering ends soon
-                </span>
-              </motion.div>
-            )}
+            <div className="space-y-1">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Active Shift Slot</span>
+              <p className="font-semibold text-gray-900 flex items-center gap-1.5 capitalize">
+                {activeSession} session
+                {isTimerActive && (
+                  <span className="text-amber-600 font-bold ml-1">({timeLeft})</span>
+                )}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Search & Filter Section */}
-        <div className="space-y-6 font-dm-sans">
+        {/* Minimalist Tab Bar & Search Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-px">
+          
+          {/* Underlined Navigation Tabs (GitHub/Slack-like minimalist styling) */}
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => setTab("beverages")}
+              className={`pb-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all relative ${
+                tab === "beverages"
+                  ? "border-[#1d4ed8] text-gray-900"
+                  : "border-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              Beverages
+            </button>
+            <button
+              onClick={() => setTab("snack")}
+              className={`pb-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all relative ${
+                tab === "snack"
+                  ? "border-[#1d4ed8] text-gray-900"
+                  : "border-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              Snacks & Eatables
+            </button>
+          </div>
 
-          {/* Premium Category Tabs */}
-          <div className="flex justify-left gap-3 overflow-x-auto pb-4 no-scrollbar">
-            {tabs.map(({ id, label }) => (
+          {/* Simple Clean Search Input */}
+          <div className="relative w-full sm:max-w-xs pb-2 sm:pb-0">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+            <input
+              type="text"
+              placeholder="Search pantry menu..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent transition-all placeholder-gray-400"
+            />
+          </div>
+        </div>
+
+        {/* Tiny Space-saving Quick Reorder Tags */}
+        {recentItems.length > 0 && (
+          <div className="flex items-center flex-wrap gap-2 text-xs py-1">
+            <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px] mr-1">Quick Picks:</span>
+            {recentItems.map((item) => (
               <button
-                key={id}
-                onClick={() => setTab(id)}
-                id={`tab-${id}`}
-                className={`shrink-0  px-8 py-3 rounded-full text-[10px] font-medium uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 ${tab === id
-                  ? "bg-[#1d4ed8] text-white shadow-lg shadow-blue-100"
-                  : "bg-white text-black border border-gray-100 hover:text-[#1d4ed8] hover:border-gray-200"
-                  }`}
+                key={item.id}
+                onClick={() => handleQuickReorder(item)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 border border-gray-200 hover:border-blue-300 hover:bg-blue-50/10 rounded-full text-xs font-medium text-gray-600 hover:text-blue-600 transition-all active:scale-[0.98]"
               >
-                {label}
+                <FiPlus size={10} />
+                {item.name}
               </button>
             ))}
           </div>
-        </div>
+        )}
 
-        {/* Count Indicator */}
-        {!loading && (
-          <div className="flex items-center gap-4 py-2">
-            <div className="h-[1px] flex-1 bg-gray-50" />
-            <p className="text-[10px] text-gray-300 font-black uppercase tracking-widest">
-              {filtered.length} Selection{filtered.length !== 1 ? "s" : ""}
+        {/* Dynamic Count Indicator */}
+        {!itemsLoading && (
+          <div className="flex items-center gap-3 pt-2">
+            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+              Available refreshments ({filtered.length})
             </p>
-            <div className="h-[1px] flex-1 bg-gray-50" />
+            <div className="h-[1px] flex-1 bg-gray-100" />
           </div>
         )}
 
-        {/* Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="card overflow-hidden">
-                <div className="skeleton h-44 w-full" />
-                <div className="p-4 space-y-2">
-                  <div className="skeleton h-4 w-2/3 rounded" />
-                  <div className="skeleton h-3 w-full rounded" />
-                  <div className="skeleton h-3 w-1/2 rounded" />
-                  <div className="skeleton h-8 rounded-lg mt-3" />
+        {/* Clean Items Grid */}
+        {itemsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4 animate-pulse">
+                <div className="h-40 w-full bg-gray-100 rounded-xl" />
+                <div className="space-y-2">
+                  <div className="h-4 w-2/3 bg-gray-100 rounded" />
+                  <div className="h-3 w-full bg-gray-100 rounded" />
                 </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <span className="text-6xl block mb-3">🍵</span>
-            <p className="text-sm font-medium">No items found.</p>
-            <p className="text-xs mt-1">Try a different search or filter.</p>
+          <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl">
+            <p className="text-sm font-bold text-gray-400">No refreshments currently available</p>
+            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+              No items match this filter category in the current active slot.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((item) => (
-              <MenuCard key={item.id} item={item} isOrderingEnabled={isOrderingEnabled} />
+              <MenuCard 
+                key={item.id} 
+                item={item} 
+                isOrderingEnabled={isOrderingEnabled} 
+              />
             ))}
           </div>
         )}
+
       </div>
 
-      {/* Floating cart button */}
+      {/* Elegant Flat Floating Cart Basket */}
       {totalQty > 0 && (
         <button
           onClick={() => setCartOpen(true)}
           id="floating-cart-btn"
-          className="fixed bottom-6 right-6 bg-[#1d4ed8] text-white rounded-2xl px-5 py-3.5 shadow-xl hover:bg-[#1e40af] transition-all duration-200 flex items-center gap-2.5 z-30 font-semibold text-sm hover:scale-105"
+          className="fixed bottom-6 right-6 bg-[#1d4ed8] text-white rounded-xl px-5 py-3.5 shadow-lg hover:bg-[#1e40af] transition-all flex items-center gap-2.5 z-30 font-bold text-xs uppercase tracking-wider hover:scale-105 active:scale-95"
         >
-          <FiShoppingCart size={17} />
-          View Cart
-          <span className="bg-white text-[#1d4ed8] text-xs font-bold px-2 py-0.5 rounded-full">
+          <FiShoppingCart size={14} />
+          Basket
+          <span className="bg-white text-[#1d4ed8] text-[10px] px-2 py-0.5 rounded-full font-black">
             {totalQty}
           </span>
         </button>
       )}
 
-      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} isOrderingEnabled={isOrderingEnabled} />
+      <CartDrawer 
+        open={cartOpen} 
+        onClose={() => setCartOpen(false)} 
+        isOrderingEnabled={isOrderingEnabled} 
+      />
     </>
   );
 }

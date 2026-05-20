@@ -30,8 +30,16 @@ export default function LoginForm({ role, redirectTo }: LoginFormProps) {
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!email) e.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid email";
+    if (!email) {
+      e.email = "Email is required";
+    } else {
+      const emailLower = email.toLowerCase().trim();
+      if (!/\S+@\S+\.\S+/.test(emailLower)) {
+        e.email = "Enter a valid email";
+      } else if (role === "user" && !emailLower.endsWith("@iroidtechnologies.com")) {
+        e.email = "Only @iroidtechnologies.com domain emails are allowed";
+      }
+    }
     if (!password) e.password = "Password is required";
     else if (password.length < 6) e.password = "Minimum 6 characters";
     setErrors(e);
@@ -44,7 +52,14 @@ export default function LoginForm({ role, redirectTo }: LoginFormProps) {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const emailLower = email.toLowerCase().trim();
+      if (role === "user" && !emailLower.endsWith("@iroidtechnologies.com")) {
+        toast.error("Access Restricted: Only @iroidtechnologies.com emails are authorized.");
+        setLoading(false);
+        return;
+      }
+
+      await signInWithEmailAndPassword(auth, emailLower, password);
       toast.success("Welcome back! Redirecting…");
       router.push(redirectTo);
     } catch (err: unknown) {
@@ -64,7 +79,16 @@ export default function LoginForm({ role, redirectTo }: LoginFormProps) {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const userEmail = result.user?.email || "";
+      
+      if (role === "user" && !userEmail.toLowerCase().trim().endsWith("@iroidtechnologies.com")) {
+        await auth.signOut();
+        toast.error("Access Restricted: Only @iroidtechnologies.com emails are authorized.");
+        setLoading(false);
+        return;
+      }
+
       toast.success("Signed in with Google!");
       router.push(redirectTo);
     } catch (err: unknown) {

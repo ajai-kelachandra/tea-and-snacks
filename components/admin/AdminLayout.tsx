@@ -21,6 +21,7 @@ import {
   FiCalendar,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
+import Footer from "@/components/Footer";
 
 const navLinks = [
   { href: "/admin/tea-snack", label: "Snack Dashboard", icon: FiCoffee },
@@ -204,6 +205,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 animate-fadeIn">{children}</main>
+        <Footer />
       </div>
     </div>
   );

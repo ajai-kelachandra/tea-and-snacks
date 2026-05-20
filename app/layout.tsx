@@ -7,7 +7,6 @@ import "./globals.css";
 import ReduxProvider from "@/components/ReduxProvider";
 import AuthObserver from "@/components/AuthObserver";
 import { Toaster } from "react-hot-toast";
-import Footer from "@/components/Footer";
 import PushNotificationManager from "@/components/PushNotificationManager";
 
 const dmSans = DM_Sans({ 
@@ -52,7 +51,6 @@ export default function RootLayout({
           <AuthObserver>
             <PushNotificationManager />
             {children}
-            <Footer />
             <Toaster
               position="top-center"
               toastOptions={{

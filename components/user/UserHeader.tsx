@@ -44,7 +44,7 @@ export default function UserHeader() {
               className={`flex items-center gap-2.5 uppercase transition-all ${pathname === "/user/menu" ? "text-black" : "hover:text-gray-600"}`}
             >
               <div className={`w-1.5 h-1.5 rounded-full transition-colors ${pathname === "/user/menu" ? "bg-[#1d4ed8]" : "bg-gray-200"}`} />
-              Snack
+              Pantry
             </button>
             <div className="w-8 h-[1px] bg-gray-300" />
             <button 

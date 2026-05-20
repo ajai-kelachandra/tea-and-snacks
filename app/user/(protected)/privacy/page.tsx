@@ -7,11 +7,11 @@ export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto py-12 px-6 font-dm-sans">
       <Link 
-        href="/user/menu" 
+        href="/user/home" 
         className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-10"
       >
         <FiArrowLeft size={14} />
-        Back to Menu
+        Back to Home
       </Link>
 
       <div className="space-y-12">
@@ -28,7 +28,7 @@ export default function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-black text-black tracking-tight">1. Data We Collect</h2>
           <p className="text-sm text-gray-500 leading-relaxed">
-            Iro Snack collects minimal data to facilitate office refreshment tracking. This includes your name, official email address, and order history. 
+            IRO People collects minimal data to facilitate office HRMS activities and refreshment tracking. This includes your name, official email address, attendance logs, and order history. 
           </p>
         </section>
 

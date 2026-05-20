@@ -233,6 +233,27 @@ export default function EmployeeLeavesPage() {
   const absentDays = attendanceLogs.filter((log) => log.status === "Absent").length;
   const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
 
+  // Get leaves duration days helper
+  const getLeaveDaysCount = (start: string, end: string) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    const diffTime = Math.abs(e.getTime() - s.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return isNaN(diffDays) ? 0 : diffDays;
+  };
+
+  // Approved leave days deductions
+  const approvedCasualDays = leaves
+    .filter((r) => r.leaveType === "Casual Leave" && r.status === "Approved")
+    .reduce((sum, r) => sum + getLeaveDaysCount(r.startDate, r.endDate), 0);
+
+  const approvedSickDays = leaves
+    .filter((r) => r.leaveType === "Sick Leave" && r.status === "Approved")
+    .reduce((sum, r) => sum + getLeaveDaysCount(r.startDate, r.endDate), 0);
+
+  const casualAvailable = Math.max(0, 12 - approvedCasualDays);
+  const sickAvailable = Math.max(0, 6 - approvedSickDays);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -257,55 +278,17 @@ export default function EmployeeLeavesPage() {
   return (
     <div className="space-y-6 font-dm-sans">
       
-      {/* Welcome Card / Profile Details */}
-      <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-blue-50 text-[#1d4ed8] rounded-2xl flex items-center justify-center text-xl font-black shadow-inner">
-            {employee.name.split(" ").map(n => n[0]).join("")}
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-gray-900">Welcome, {employee.name}!</h1>
-            <p className="text-xs text-gray-400 font-bold tracking-wider uppercase mt-0.5">{employee.jobTitle} • {employee.department}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 text-xs font-semibold">
-          <div className="space-y-0.5">
-            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Employee ID</span>
-            <p className="text-gray-900 font-extrabold">{employee.employeeId}</p>
-          </div>
-          <div className="space-y-0.5">
-            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Office Email</span>
-            <p className="text-gray-900 font-bold truncate max-w-[150px]">{employee.email}</p>
-          </div>
-          <div className="space-y-0.5 col-span-2 sm:col-span-1">
-            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Presence Ratio</span>
-            <p className="text-emerald-600 font-extrabold">{attendanceRate}% Attendance</p>
-          </div>
-        </div>
-      </div>
-
       {/* Attendance Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Present Days</p>
-          <p className="text-2xl font-black text-emerald-600 mt-1">{presentDays - lateDays}</p>
-          <p className="text-[9px] text-gray-400 mt-0.5">Logged on time shifts</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+          <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Casual Leaves Available</p>
+          <p className="text-3xl font-black text-[#1d4ed8] mt-1">{casualAvailable} / 12</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Days remaining for personal affairs</p>
         </div>
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Late Clock-Ins</p>
-          <p className="text-2xl font-black text-amber-500 mt-1">{lateDays}</p>
-          <p className="text-[9px] text-gray-400 mt-0.5">Punch-ins post 09:15 AM</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">On Leaves</p>
-          <p className="text-2xl font-black text-blue-600 mt-1">{onLeaveDays}</p>
-          <p className="text-[9px] text-gray-400 mt-0.5">Approved medical/casuals</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Absent Days</p>
-          <p className="text-2xl font-black text-red-500 mt-1">{absentDays}</p>
-          <p className="text-[9px] text-gray-400 mt-0.5">Unexcused missing shifts</p>
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+          <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Sick Leaves Available</p>
+          <p className="text-3xl font-black text-purple-600 mt-1">{sickAvailable} / 6</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Days remaining for medical/recuperation</p>
         </div>
       </div>
 
