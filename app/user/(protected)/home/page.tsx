@@ -99,189 +99,271 @@ export default function EmployeeHomePage() {
   else greeting = "Good evening";
 
   return (
-    <div className="space-y-8 font-dm-sans text-gray-800 animate-fadeIn pb-12">
+    <div className="space-y-6 font-dm-sans text-gray-800 animate-fadeIn pb-12">
       
-      {/* Upper Header Greetings */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+      {/* Upper Header Greetings - Minimal */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
             {greeting}, {employee.name.split(" ")[0]}!
           </h1>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
-            {employee.jobTitle} • {employee.department} Division
+          <p className="text-[11px] text-gray-400 font-medium">
+            Welcome back. Here is your dashboard overview for today.
           </p>
         </div>
-        <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm shrink-0 w-max select-none">
-          📅 {new Date().toLocaleDateString("en-IN", { weekday: 'long', day: 'numeric', month: 'short' })}
+        <div className="text-[10px] text-gray-455 font-semibold bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm shrink-0 w-max select-none">
+          📅 {new Date().toLocaleDateString("en-IN", { weekday: 'short', day: 'numeric', month: 'short' })}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {/* Main Visual Profile Card - Minimalist & Sleek */}
+      <div className="bg-white border border-gray-100/80 rounded-2xl p-6 shadow-sm flex flex-col lg:flex-row items-center gap-6 relative overflow-hidden">
+        {/* Soft decorative background shape */}
+        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-5 pointer-events-none text-gray-400">
+          <FiShield size={180} />
+        </div>
         
-        {/* Left Column - Profile & Essential Info Cards (col-span-2) */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Left side: Avatar and Basic Info */}
+        <div className="flex items-center gap-4.5 z-10 shrink-0">
+          {/* Avatar Circle - Clean & Minimal */}
+          <div className="w-12 h-12 bg-gray-50 text-gray-600 border border-gray-100 rounded-full flex items-center justify-center text-lg font-bold shrink-0 select-none">
+            {avatarInitials}
+          </div>
           
-          {/* Main Visual Profile Card - Minimalist, Neat, Clean */}
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
-            {/* Soft decorative background shape */}
-            <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-5 pointer-events-none text-gray-400">
-              <FiShield size={180} />
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-gray-900 tracking-tight leading-none">{employee.name}</h2>
+              <span className="inline-flex items-center justify-center bg-green-50 text-green-700 border border-green-200/50 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full select-none w-max">
+                Active
+              </span>
             </div>
-            
-            {/* Avatar Initials Circle - Soft Pastel */}
-            <div className="w-20 h-20 bg-blue-50 text-[#1d4ed8] border border-blue-100/50 rounded-2xl flex items-center justify-center text-3xl font-black shadow-inner shrink-0 select-none">
-              {avatarInitials}
-            </div>
-            
-            <div className="text-center sm:text-left space-y-1.5 z-10 min-w-0 flex-1">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-                <h2 className="text-xl font-black text-gray-900 tracking-tight truncate leading-none">{employee.name}</h2>
-                <span className="inline-flex items-center justify-center bg-green-50 text-green-700 border border-green-200/50 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full select-none w-max mx-auto sm:mx-0">
-                  Active
-                </span>
-              </div>
-              <p className="text-xs font-bold text-[#1d4ed8] uppercase tracking-widest mt-0.5">
-                {employee.jobTitle}
-              </p>
-              <p className="text-[10px] text-gray-450 uppercase font-black tracking-wider">
-                ID: {employee.employeeId} • {employee.department} Division
-              </p>
-            </div>
+            <p className="text-xs text-gray-500 font-medium leading-none">
+              {employee.jobTitle} • <span className="text-gray-400">{employee.department} Division</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Vertical Separator for Large Screens */}
+        <div className="hidden lg:block w-px h-10 bg-gray-100 mx-2 shrink-0 z-10" />
+
+        {/* Right side: Typographic grid of details - Minimal & Clean */}
+        <div className="w-full lg:flex-1 grid grid-cols-2 sm:grid-cols-4 gap-6 z-10 lg:pl-4">
+          
+          {/* Employee ID */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Employee ID</span>
+            <span className="text-xs font-bold text-gray-900 block">{employee.employeeId}</span>
           </div>
 
-          {/* Essential Details Sleek Tiles */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100/80 space-y-6">
-            <div className="flex items-center gap-2.5 border-b border-gray-50 pb-4">
-              <div className="p-1.5 bg-blue-50 text-[#1d4ed8] rounded-lg">
-                <FiAward size={16} />
-              </div>
-              <h3 className="text-sm font-black text-gray-900 tracking-tight">Essential Directory Records</h3>
-            </div>
+          {/* Official Email */}
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Official Email</span>
+            <a href={`mailto:${employee.email}`} className="text-xs font-bold text-gray-900 hover:text-[#1d4ed8] block truncate transition-colors">
+              {employee.email}
+            </a>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Employee ID */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1d4ed8] flex items-center justify-center shrink-0">
-                  <FiBriefcase size={16} />
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Employee ID</span>
-                  <span className="text-xs font-black text-gray-900 block">{employee.employeeId}</span>
-                </div>
-              </div>
+          {/* Phone Contact */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Phone Contact</span>
+            <span className="text-xs font-bold text-gray-900 block">
+              {employee.phone || "Not Provided"}
+            </span>
+          </div>
 
-              {/* Official Email */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                  <FiMail size={16} />
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Official Email</span>
-                  <a href={`mailto:${employee.email}`} className="text-xs font-extrabold text-gray-900 hover:text-[#1d4ed8] block truncate transition-colors">
-                    {employee.email}
-                  </a>
-                </div>
-              </div>
-
-              {/* Phone Contact */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                  <FiPhone size={16} />
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Phone Contact</span>
-                  <span className="text-xs font-bold text-gray-900 block">
-                    {employee.phone || "Not Provided"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Date Joined */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <FiCalendar size={16} />
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Date Joined</span>
-                  <span className="text-xs font-bold text-gray-900 block">
-                    {employee.dateJoined ? new Date(employee.dateJoined).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric"
-                    }) : "Not Specified"}
-                  </span>
-                </div>
-              </div>
-
-            </div>
+          {/* Date Joined */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block">Date Joined</span>
+            <span className="text-xs font-bold text-gray-900 block">
+              {employee.dateJoined ? new Date(employee.dateJoined).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+              }) : "Not Specified"}
+            </span>
           </div>
 
         </div>
 
-        {/* Right Column - Employee Benefits Hub Navigation widgets (col-span-1) */}
-        <div className="space-y-4">
-          
-          <div className="bg-white border border-gray-100/80 rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="flex items-center gap-2.5 border-b border-gray-50 pb-4">
-              <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                <FiShield size={15} />
+      </div>
+
+      {/* Main Grid - Two columns underneath */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+        
+        {/* Card 1: Upcoming Holidays Calendar Widget (col-span-3) */}
+        <div className="lg:col-span-3 bg-white border border-gray-100/85 rounded-2xl p-6 shadow-sm space-y-4 animate-fadeIn flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-50 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="text-gray-400">
+                  <FiCalendar size={15} />
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-900">
+                  Upcoming Holidays
+                </h3>
               </div>
-              <h3 className="text-sm font-black text-gray-900 tracking-tight">
-                Employee Hub Launchpad
-              </h3>
+              <span className="text-[9px] font-bold uppercase text-gray-400 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                2026 Schedule
+              </span>
             </div>
 
-            <div className="space-y-3.5">
+            {/* List of upcoming holidays */}
+            <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
+              {(() => {
+                const HOLIDAYS = [
+                  { name: "May Day", date: "2026-05-01", day: "Friday" },
+                  { name: "Eid-ul-Ad'ha (Bakrid)", date: "2026-05-27", day: "Wednesday", isStarred: true },
+                  { name: "First Onam/Milad-i-Sherif", date: "2026-08-25", day: "Tuesday", subtitle: "Prophet Birthday", isStarred: true },
+                  { name: "Thiruvonam", date: "2026-08-26", day: "Wednesday" },
+                  { name: "Gandhi Jayanthi", date: "2026-10-02", day: "Friday" },
+                  { name: "Mahanavami", date: "2026-10-20", day: "Tuesday" },
+                  { name: "Christmas", date: "2026-12-25", day: "Friday" }
+                ];
+
+                const today = new Date("2026-05-20");
+
+                const upcoming = HOLIDAYS.filter((h) => new Date(h.date) >= today);
+
+                if (upcoming.length === 0) {
+                  return (
+                    <div className="text-center py-6 text-gray-450">
+                      <p className="text-xs font-bold">No upcoming holidays scheduled</p>
+                    </div>
+                  );
+                }
+
+                return upcoming.map((h, idx) => {
+                  const hDate = new Date(h.date);
+                  const diffTime = hDate.getTime() - today.getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  let countdownText = "";
+                  if (diffDays === 0) countdownText = "Today 🎉";
+                  else if (diffDays === 1) countdownText = "Tomorrow";
+                  else if (diffDays <= 30) countdownText = `In ${diffDays} days`;
+                  else countdownText = `In ${Math.round(diffDays / 30)} months`;
+
+                  const monthName = hDate.toLocaleString("en-IN", { month: "short" }).toUpperCase();
+                  const dateNum = hDate.getDate();
+
+                  return (
+                    <div key={idx} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 group select-none">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        {/* Day / Date column - Clean Typographic */}
+                        <div className="text-left shrink-0 w-8">
+                          <span className="text-[9px] font-black text-gray-400 block uppercase leading-none tracking-wider">{monthName}</span>
+                          <span className="text-sm font-extrabold text-gray-900 block leading-tight mt-0.5">{dateNum}</span>
+                        </div>
+                        {/* Name and subtitle */}
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900 truncate group-hover:text-[#1d4ed8] transition-colors leading-tight">
+                            {h.name}
+                            {h.isStarred && <span className="text-rose-500 ml-0.5">*</span>}
+                          </p>
+                          <p className="text-[10px] text-gray-455 font-medium">
+                            {h.day} {h.subtitle ? `• ${h.subtitle}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Countdown tag - soft and minimal */}
+                      <span className="text-[9px] font-semibold text-gray-500 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                        {countdownText}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Employee Benefits Hub Navigation widgets (col-span-2) */}
+        <div className="lg:col-span-2 bg-white border border-gray-100/85 rounded-2xl p-6 shadow-sm space-y-4 animate-fadeIn flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-50 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="text-gray-400">
+                  <FiShield size={15} />
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-900">
+                  Employee Hub Launchpad
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
               
               {/* Widget: Pantry Perks */}
               <button
                 onClick={() => router.push("/user/menu")}
-                className="w-full text-left p-4 bg-gray-50 hover:bg-blue-50/20 border border-gray-100 hover:border-blue-200/60 rounded-2xl transition-all cursor-pointer group flex items-start gap-4 active:scale-[0.99]"
+                className="w-full text-left p-3 hover:bg-gray-50 border border-transparent hover:border-gray-100 rounded-xl transition-all cursor-pointer group flex items-center justify-between active:scale-[0.99]"
               >
-                <div className="p-3 bg-blue-50 text-[#1d4ed8] border border-blue-100 rounded-xl group-hover:scale-105 transition-transform duration-200 shrink-0">
-                  <FiCoffee size={16} />
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="text-gray-455 group-hover:text-[#1d4ed8] transition-colors shrink-0">
+                    <FiCoffee size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-gray-900 block group-hover:text-[#1d4ed8] transition-colors leading-none">Pantry Perks</span>
+                    <span className="text-[10px] text-gray-400 font-medium block leading-normal mt-0.5">Order daily snacks and refreshments.</span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <span className="text-xs font-extrabold text-gray-900 group-hover:text-[#1d4ed8] block transition-colors leading-none">Pantry Perks Benefits</span>
-                  <span className="text-[10px] text-gray-400 font-bold block leading-relaxed">Order daily snacks and refreshments.</span>
-                </div>
-                <FiArrowRight className="text-gray-300 group-hover:text-[#1d4ed8] shrink-0 mt-3.5 transition-all group-hover:translate-x-1" size={14} />
+                <FiArrowRight className="text-gray-300 group-hover:text-gray-550 shrink-0 transition-all group-hover:translate-x-0.5" size={14} />
               </button>
 
               {/* Widget: Leaves Balance */}
               <button
                 onClick={() => router.push("/user/leaves")}
-                className="w-full text-left p-4 bg-gray-50 hover:bg-purple-50/20 border border-gray-100 hover:border-purple-200/60 rounded-2xl transition-all cursor-pointer group flex items-start gap-4 active:scale-[0.99]"
+                className="w-full text-left p-3 hover:bg-gray-50 border border-transparent hover:border-gray-100 rounded-xl transition-all cursor-pointer group flex items-center justify-between active:scale-[0.99]"
               >
-                <div className="p-3 bg-purple-50 text-purple-600 border border-purple-100 rounded-xl group-hover:scale-105 transition-transform duration-200 shrink-0">
-                  <FiCalendar size={16} />
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="text-gray-455 group-hover:text-purple-600 transition-colors shrink-0">
+                    <FiCalendar size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-gray-900 block group-hover:text-purple-600 transition-colors leading-none">Leaves & Attendance</span>
+                    <span className="text-[10px] text-gray-400 font-medium block leading-normal mt-0.5">Check leaves allowance and balances.</span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <span className="text-xs font-extrabold text-gray-900 group-hover:text-purple-600 block transition-colors leading-none">Leaves & Attendance</span>
-                  <span className="text-[10px] text-gray-400 font-bold block leading-relaxed">Check leaves allowance and balances.</span>
-                </div>
-                <FiArrowRight className="text-gray-300 group-hover:text-purple-600 shrink-0 mt-3.5 transition-all group-hover:translate-x-1" size={14} />
+                <FiArrowRight className="text-gray-300 group-hover:text-gray-550 shrink-0 transition-all group-hover:translate-x-0.5" size={14} />
               </button>
 
               {/* Widget: Timesheet Logs */}
               <button
                 onClick={() => router.push("/user/timesheet")}
-                className="w-full text-left p-4 bg-gray-50 hover:bg-emerald-50/20 border border-gray-100 hover:border-emerald-200/60 rounded-2xl transition-all cursor-pointer group flex items-start gap-4 active:scale-[0.99]"
+                className="w-full text-left p-3 hover:bg-gray-50 border border-transparent hover:border-gray-100 rounded-xl transition-all cursor-pointer group flex items-center justify-between active:scale-[0.99]"
               >
-                <div className="p-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl group-hover:scale-105 transition-transform duration-200 shrink-0">
-                  <FiClock size={16} />
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="text-gray-455 group-hover:text-emerald-600 transition-colors shrink-0">
+                    <FiClock size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-gray-900 block group-hover:text-emerald-600 transition-colors leading-none">Timesheet Logs</span>
+                    <span className="text-[10px] text-gray-400 font-medium block leading-normal mt-0.5">Log daily activities and work hours.</span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <span className="text-xs font-extrabold text-gray-900 group-hover:text-emerald-600 block transition-colors leading-none">Timesheet Hour Logs</span>
-                  <span className="text-[10px] text-gray-400 font-bold block leading-relaxed">Log daily activities and work hours.</span>
+                <FiArrowRight className="text-gray-300 group-hover:text-gray-550 shrink-0 transition-all group-hover:translate-x-0.5" size={14} />
+              </button>
+
+              {/* Widget: Jira Taskboard */}
+              <button
+                onClick={() => router.push("/user/tasks")}
+                className="w-full text-left p-3 hover:bg-gray-50 border border-transparent hover:border-gray-100 rounded-xl transition-all cursor-pointer group flex items-center justify-between active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="text-gray-455 group-hover:text-blue-650 transition-colors shrink-0">
+                    <FiBriefcase size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-gray-900 block group-hover:text-blue-650 transition-colors leading-none">Jira Taskboard</span>
+                    <span className="text-[10px] text-gray-400 font-medium block leading-normal mt-0.5">Manage tasks, updates, and assignments in real-time.</span>
+                  </div>
                 </div>
-                <FiArrowRight className="text-gray-300 group-hover:text-emerald-600 shrink-0 mt-3.5 transition-all group-hover:translate-x-1" size={14} />
+                <FiArrowRight className="text-gray-300 group-hover:text-gray-550 shrink-0 transition-all group-hover:translate-x-0.5" size={14} />
               </button>
 
             </div>
           </div>
-
         </div>
 
       </div>

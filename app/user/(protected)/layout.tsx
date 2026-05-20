@@ -15,11 +15,15 @@ import {
   FiX,
   FiChevronUp,
   FiChevronDown,
-  FiHome
+  FiHome,
+  FiBriefcase,
+  FiSun,
+  FiMoon
 } from "react-icons/fi";
 import CartDrawer from "@/components/user/CartDrawer";
 import Footer from "@/components/Footer";
 import toast from "react-hot-toast";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function UserProtectedLayout({
   children,
@@ -32,6 +36,7 @@ export default function UserProtectedLayout({
   const cartItems = useAppSelector((s) => s.cart.items);
   const totalQty = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
+  const { theme, toggleTheme } = useTheme();
   // Layout states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -71,15 +76,15 @@ export default function UserProtectedLayout({
   }
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-white font-dm-sans">
+    <div className="flex flex-col h-full bg-[var(--bg-sidebar)] font-dm-sans transition-colors duration-200">
       
       {/* Sidebar Logo */}
-      <div className="px-6 py-6 border-b border-gray-150 shrink-0">
+      <div className="px-6 py-6 border-b border-[var(--border)] shrink-0">
         <div 
           className="flex flex-col leading-none cursor-pointer"
           onClick={() => { router.push("/user/home"); setMobileMenuOpen(false); }}
         >
-          <span className="text-lg font-black text-gray-900 tracking-tighter uppercase">IRO</span>
+          <span className="text-lg font-black text-[var(--text-primary)] tracking-tighter uppercase">IRO</span>
           <span className="text-[9px] font-black text-[#1d4ed8] tracking-[0.3em] ml-0.5 mt-0.5 uppercase">PEOPLE</span>
         </div>
       </div>
@@ -95,8 +100,8 @@ export default function UserProtectedLayout({
           }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
             pathname === "/user/home"
-              ? "bg-gray-100/85 text-gray-900"
-              : "text-gray-400 hover:text-gray-600 hover:bg-gray-50/50"
+              ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
           }`}
         >
           <FiHome size={15} className={pathname === "/user/home" ? "text-[#1d4ed8]" : "text-gray-400"} />
@@ -107,17 +112,17 @@ export default function UserProtectedLayout({
         <div className="space-y-1">
           <button
             onClick={() => setPantryOpen(!pantryOpen)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-50/50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
           >
             <div className="flex items-center gap-3">
               <FiCoffee size={15} className="text-[#1d4ed8]" />
-              <span className="text-gray-900">Pantry Perks</span>
+              <span className="text-[var(--text-primary)]">Pantry Perks</span>
             </div>
             {pantryOpen ? <FiChevronUp size={12} className="text-gray-400" /> : <FiChevronDown size={12} className="text-gray-400" />}
           </button>
 
           {pantryOpen && (
-            <div className="pl-3.5 space-y-1.5 animate-fadeIn border-l border-gray-150 ml-5.5">
+            <div className="pl-3.5 space-y-1.5 animate-fadeIn border-l border-[var(--border)] ml-5.5">
               {/* Sub-item: Browse Menu */}
               <button
                 onClick={() => {
@@ -126,8 +131,8 @@ export default function UserProtectedLayout({
                 }}
                 className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
                   pathname === "/user/menu"
-                    ? "text-gray-950 font-extrabold"
-                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-50/30"
+                    ? "text-[var(--text-primary)] font-extrabold"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 <div className={`w-1 h-1 rounded-full ${pathname === "/user/menu" ? "bg-[#1d4ed8] scale-125" : "bg-gray-300"}`} />
@@ -140,7 +145,7 @@ export default function UserProtectedLayout({
                   setCartOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between px-3.5 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-gray-600 hover:bg-gray-50/30 transition-all"
+                className="w-full flex items-center justify-between px-3.5 py-2 rounded-lg text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-1 h-1 rounded-full bg-gray-300" />
@@ -156,8 +161,8 @@ export default function UserProtectedLayout({
                 }}
                 className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
                   pathname === "/user/orders"
-                    ? "text-gray-950 font-extrabold"
-                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-50/30"
+                    ? "text-[var(--text-primary)] font-extrabold"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 <div className={`w-1 h-1 rounded-full ${pathname === "/user/orders" ? "bg-[#1d4ed8] scale-125" : "bg-gray-300"}`} />
@@ -175,12 +180,28 @@ export default function UserProtectedLayout({
           }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
             pathname === "/user/leaves"
-              ? "bg-gray-100/85 text-gray-900"
-              : "text-gray-400 hover:text-gray-600 hover:bg-gray-50/50"
+              ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
           }`}
         >
           <FiCalendar size={15} className={pathname === "/user/leaves" ? "text-[#1d4ed8]" : "text-gray-400"} />
           Leave Directory
+        </button>
+
+        {/* Separate Category: Jira Taskboard */}
+        <button
+          onClick={() => {
+            router.push("/user/tasks");
+            setMobileMenuOpen(false);
+          }}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+            pathname === "/user/tasks"
+              ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+          }`}
+        >
+          <FiBriefcase size={15} className={pathname === "/user/tasks" ? "text-[#1d4ed8]" : "text-gray-400"} />
+          Jira Taskboard
         </button>
 
         {/* Separate Category: Timesheet Logs */}
@@ -191,8 +212,8 @@ export default function UserProtectedLayout({
           }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
             pathname === "/user/timesheet"
-              ? "bg-gray-100/85 text-gray-900"
-              : "text-gray-400 hover:text-gray-600 hover:bg-gray-50/50"
+              ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
           }`}
         >
           <FiClock size={15} className={pathname === "/user/timesheet" ? "text-[#1d4ed8]" : "text-gray-400"} />
@@ -201,20 +222,20 @@ export default function UserProtectedLayout({
       </nav>
 
       {/* Bottom Profile Details & Logout */}
-      <div className="p-4 border-t border-gray-150 shrink-0 bg-gray-50/30">
-        <div className="flex items-center gap-3 px-2 mb-4">
-          <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[10px] font-black text-[#1d4ed8]">
+      <div className="p-4 border-t border-[var(--border)] shrink-0">
+        <div className="flex items-center gap-3 px-2 mb-3">
+          <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 flex items-center justify-center text-[10px] font-black text-[#1d4ed8]">
             {userName ? userName.slice(0, 2).toUpperCase() : "EP"}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-gray-950 truncate leading-none">{userName || "Employee"}</p>
-            <p className="text-[10px] text-gray-400 font-medium truncate mt-1">{userEmail || "staff@company.com"}</p>
+            <p className="text-xs font-bold text-[var(--text-primary)] truncate leading-none">{userName || "Employee"}</p>
+            <p className="text-[10px] text-[var(--text-muted)] font-medium truncate mt-1">{userEmail || "staff@company.com"}</p>
           </div>
         </div>
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 text-xs font-bold text-gray-500 transition-all uppercase tracking-wider active:scale-[0.98]"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--border)] hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-rose-600 hover:border-rose-100 dark:hover:border-rose-900 text-xs font-bold text-[var(--text-muted)] transition-all uppercase tracking-wider active:scale-[0.98]"
         >
           <FiLogOut size={13} />
           Sign Out
@@ -225,27 +246,57 @@ export default function UserProtectedLayout({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-base)" }}>
       
       {/* Left Sidebar - Desktop only */}
-      <aside className="hidden md:flex flex-col w-60 border-r border-gray-200 fixed h-full z-20 shrink-0 bg-white">
+      <aside className="hidden md:flex flex-col w-60 border-r border-[var(--border)] fixed h-full z-20 shrink-0" style={{ backgroundColor: "var(--bg-sidebar)" }}>
         {SidebarContent()}
       </aside>
 
       {/* Main Workspace Frame */}
       <div className="flex-1 md:pl-60 flex flex-col min-w-0">
         
+        {/* Desktop sticky topbar */}
+        <header className="hidden md:flex items-center justify-between px-6 py-3.5 border-b border-[var(--border)] sticky top-0 z-20 shrink-0 font-dm-sans transition-colors" style={{ backgroundColor: "var(--bg-header)" }}>
+          <p className="text-xs font-semibold text-[var(--text-muted)] capitalize">
+            👋 Welcome back, <span className="text-[var(--text-primary)] font-bold">{userName || "Employee"}</span>
+          </p>
+          <div className="flex items-center gap-2">
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--border)] hover:bg-[var(--bg-hover)] text-xs font-bold text-[var(--text-secondary)] transition-all active:scale-95"
+            >
+              {theme === "dark"
+                ? <FiSun size={14} className="text-amber-400" />
+                : <FiMoon size={14} className="text-slate-500" />
+              }
+              <span className="hidden sm:inline">{theme === "dark" ? "Light" : "Dark"}</span>
+            </button>
+          </div>
+        </header>
+
         {/* Mobile Top Header (hidden on desktop) */}
-        <header className="md:hidden flex items-center justify-between px-5 py-4 bg-white border-b border-gray-200 sticky top-0 z-20 shrink-0 font-dm-sans">
+        <header className="md:hidden flex items-center justify-between px-5 py-4 border-b border-[var(--border)] sticky top-0 z-20 shrink-0 font-dm-sans transition-colors" style={{ backgroundColor: "var(--bg-header)" }}>
           <div 
             className="flex flex-col leading-none cursor-pointer"
             onClick={() => router.push("/user/home")}
           >
-            <span className="text-base font-black text-gray-900 uppercase">IRO</span>
+            <span className="text-base font-black text-[var(--text-primary)] uppercase">IRO</span>
             <span className="text-[8px] font-black text-[#1d4ed8] tracking-[0.3em] ml-px uppercase">PEOPLE</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Dark mode toggle (mobile) */}
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+              className="p-2 rounded-xl border border-[var(--border)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all active:scale-95"
+            >
+              {theme === "dark" ? <FiSun size={15} className="text-amber-400" /> : <FiMoon size={15} className="text-slate-500" />}
+            </button>
+
             {totalQty > 0 && (
               <button
                 onClick={() => setCartOpen(true)}
@@ -276,7 +327,7 @@ export default function UserProtectedLayout({
               onClick={() => setMobileMenuOpen(false)}
             />
             {/* Slide-out Panel */}
-            <div className="relative w-64 bg-white h-full shadow-2xl flex flex-col z-10 animate-slideLeft">
+            <div className="relative w-64 h-full shadow-2xl flex flex-col z-10 animate-slideLeft" style={{ backgroundColor: "var(--bg-sidebar)" }}>
               <button 
                 onClick={() => setMobileMenuOpen(false)}
                 className="absolute right-4 top-5 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"

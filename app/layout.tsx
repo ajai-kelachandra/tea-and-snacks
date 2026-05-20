@@ -8,6 +8,7 @@ import ReduxProvider from "@/components/ReduxProvider";
 import AuthObserver from "@/components/AuthObserver";
 import { Toaster } from "react-hot-toast";
 import PushNotificationManager from "@/components/PushNotificationManager";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const dmSans = DM_Sans({ 
   subsets: ["latin"],
@@ -49,33 +50,31 @@ export default function RootLayout({
       <body className={`${dmSans.className} ${dmSans.variable} ${notoMalayalam.variable} antialiased`}>
         <ReduxProvider>
           <AuthObserver>
-            <PushNotificationManager />
-            {children}
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 3500,
-                className: "font-dm-sans",
-                style: {
-                  background: "#fff",
-                  color: "#000",
-                  borderRadius: "24px",
-                  padding: "16px 24px",
-                  fontSize: "11px",
-                  fontWeight: "900",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
-                  border: "1px solid #f3f4f6",
-                },
-                success: {
-                  icon: null,
-                },
-                error: {
-                  icon: null,
-                },
-              }}
-            />
+            <ThemeProvider>
+              <PushNotificationManager />
+              {children}
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  duration: 3500,
+                  className: "font-dm-sans",
+                  style: {
+                    background: "var(--bg-card)",
+                    color: "var(--text-primary)",
+                    borderRadius: "24px",
+                    padding: "16px 24px",
+                    fontSize: "11px",
+                    fontWeight: "900",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                    border: "1px solid var(--border-light)",
+                  },
+                  success: { icon: null },
+                  error:   { icon: null },
+                }}
+              />
+            </ThemeProvider>
           </AuthObserver>
         </ReduxProvider>
       </body>

@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { setUser, clearUser, setLoading } from "@/features/authSlice";
 import { useAppDispatch } from "@/lib/hooks";
+import type { UserRole } from "@/features/authSlice";
 
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "admin@company.com")
   .split(",")
@@ -19,23 +20,31 @@ export default function AuthObserver({ children }: { children: ReactNode }) {
         dispatch(setLoading(true));
         const { db } = await import("@/lib/firebase");
         const { doc: firestoreDoc, getDoc: getFirestoreDoc, setDoc: setFirestoreDoc } = await import("firebase/firestore");
-        
+
         let finalName = user.displayName || user.email?.split("@")[0] || "User";
-        const role = ADMIN_EMAILS.includes((user.email || "").toLowerCase()) ? "admin" : "user";
+
+        // Default role from env-based admin email list
+        const defaultRole: UserRole = ADMIN_EMAILS.includes((user.email || "").toLowerCase()) ? "admin" : "user";
+        let finalRole: UserRole = defaultRole;
 
         try {
           const userDocRef = firestoreDoc(db, "users", user.uid);
           const userSnap = await getFirestoreDoc(userDocRef);
-          
+
           if (userSnap.exists()) {
-            finalName = userSnap.data().name || finalName;
+            const data = userSnap.data();
+            finalName = data.name || finalName;
+            // ★ RBAC: honour the role stored in Firestore (admin can promote users)
+            if (data.role === "admin" || data.role === "user") {
+              finalRole = data.role as UserRole;
+            }
           } else {
-            // Initialize user doc if it doesn't exist
+            // First login — create user doc with default role
             await setFirestoreDoc(userDocRef, {
               email: user.email,
               name: finalName,
-              role,
-              createdAt: new Date().toISOString()
+              role: defaultRole,
+              createdAt: new Date().toISOString(),
             });
           }
         } catch (e) {
@@ -47,7 +56,7 @@ export default function AuthObserver({ children }: { children: ReactNode }) {
             uid: user.uid,
             email: user.email || "",
             displayName: finalName,
-            role,
+            role: finalRole,
           })
         );
       } else {
