@@ -17,13 +17,7 @@ export default function UserLoginPage() {
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
           {/* Header */}
           <div className="px-8 py-8 text-center border-b border-gray-100">
-            <div className="flex justify-center mb-4">
-              <img 
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQq9ch8YURqsoDkWExMc-87FnWR3QSbqm4qbQ&s" 
-                alt="IRO PEOPLE" 
-                className="h-16 object-contain drop-shadow-md" 
-              />
-            </div>
+
             <div className="flex items-center justify-center gap-1.5 mt-1 text-gray-500">
               <FiUser size={13} />
               <p className="text-sm">Employee Portal</p>
