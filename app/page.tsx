@@ -11,7 +11,8 @@ export default function HomePage() {
   useEffect(() => {
     if (loading) return;
     if (isLoggedIn) {
-      router.replace(userRole === "admin" ? "/admin/dashboard" : "/user/menu");
+      const isAdminRole = userRole && userRole !== "employee";
+      router.replace(isAdminRole ? "/admin/dashboard" : "/user/menu");
     } else {
       router.replace("/user/login");
     }
