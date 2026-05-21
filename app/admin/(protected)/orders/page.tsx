@@ -23,6 +23,7 @@ export default function AdminOrdersPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [confirmPayment, setConfirmPayment] = useState<{ id: string, nextStatus: "paid" | "unpaid" } | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
@@ -72,8 +73,15 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handlePaymentStatusToggle = async (id: string, currentStatus: "paid" | "unpaid") => {
+  const initiatePaymentStatusToggle = (id: string, currentStatus: "paid" | "unpaid") => {
     const nextStatus = currentStatus === "paid" ? "unpaid" : "paid";
+    setConfirmPayment({ id, nextStatus });
+  };
+
+  const executePaymentStatusToggle = async () => {
+    if (!confirmPayment) return;
+    const { id, nextStatus } = confirmPayment;
+    setConfirmPayment(null);
     try {
       await dispatch(updateOrderPaymentStatus({ id, paymentStatus: nextStatus })).unwrap();
       toast.success(`Order marked as ${nextStatus.toUpperCase()}! 💰`);
@@ -204,17 +212,17 @@ export default function AdminOrdersPage() {
         <div className="card overflow-x-auto">
           <table className="w-full text-sm min-w-[750px]">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Items</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Charge</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Time</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment</th>
+              <tr className="bg-[var(--bg-hover)] border-b border-[var(--border)]">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">ID</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">User</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Items</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Charge</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Time</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Payment</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-[var(--border)]">
               {filtered.map((order) => {
                 // Calculate a sequential display number based on total orders
                 // Assuming orders are sorted by date desc
@@ -222,7 +230,7 @@ export default function AdminOrdersPage() {
                 const charges = orderCharges[order.id] || { items: order.items.map((i: any) => ({ ...i, billableQty: 0 })), extraCharge: 0 };
 
                 return (
-                  <tr key={order.id} className="hover:bg-gray-50/40 transition-colors">
+                  <tr key={order.id} className="hover:bg-[var(--bg-hover)] transition-colors">
                     <td className="px-4 py-3">
                       <span className="font-bold text-xs bg-blue-50 px-3 py-1 rounded-lg text-[#1d4ed8]">
                         #{displayId}
@@ -296,7 +304,7 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-3">
                       {charges.extraCharge > 0 ? (
                         <button
-                          onClick={() => handlePaymentStatusToggle(order.id, order.paymentStatus || "unpaid")}
+                          onClick={() => initiatePaymentStatusToggle(order.id, order.paymentStatus || "unpaid")}
                           className={`inline-flex items-center gap-1 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-wider transition-all duration-150 active:scale-95 cursor-pointer shadow-sm border ${
                             order.paymentStatus === "paid"
                               ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
@@ -314,6 +322,35 @@ export default function AdminOrdersPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmPayment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmPayment(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-fadeIn">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Confirm Payment Status</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to mark this extra charge as <strong className="uppercase">{confirmPayment.nextStatus}</strong>?
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setConfirmPayment(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executePaymentStatusToggle}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-white transition-colors ${
+                  confirmPayment.nextStatus === "paid" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

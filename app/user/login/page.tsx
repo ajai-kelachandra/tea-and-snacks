@@ -18,11 +18,12 @@ export default function UserLoginPage() {
           {/* Header */}
           <div className="px-8 py-8 text-center border-b border-gray-100">
             <div className="flex justify-center mb-4">
-              <div className="w-14 h-14 bg-[#1d4ed8] rounded-2xl flex items-center justify-center shadow-lg">
-                <FiUsers size={26} className="text-white" />
-              </div>
+              <img 
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQq9ch8YURqsoDkWExMc-87FnWR3QSbqm4qbQ&s" 
+                alt="IRO PEOPLE" 
+                className="h-16 object-contain drop-shadow-md" 
+              />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">IRO People</h1>
             <div className="flex items-center justify-center gap-1.5 mt-1 text-gray-500">
               <FiUser size={13} />
               <p className="text-sm">Employee Portal</p>

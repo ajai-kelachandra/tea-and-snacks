@@ -5,20 +5,21 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAppSelector } from "@/lib/hooks";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { 
-  FiCoffee, 
-  FiCalendar, 
-  FiClock, 
-  FiShoppingCart, 
-  FiLogOut, 
-  FiMenu, 
+import {
+  FiCoffee,
+  FiCalendar,
+  FiClock,
+  FiShoppingCart,
+  FiLogOut,
+  FiMenu,
   FiX,
   FiChevronUp,
   FiChevronDown,
   FiHome,
   FiBriefcase,
   FiSun,
-  FiMoon
+  FiMoon,
+  FiShield
 } from "react-icons/fi";
 import CartDrawer from "@/components/user/CartDrawer";
 import Footer from "@/components/Footer";
@@ -46,10 +47,8 @@ export default function UserProtectedLayout({
     if (loading) return;
     if (!isLoggedIn) {
       router.replace("/user/login");
-    } else if (userRole === "admin") {
-      router.replace("/admin/dashboard");
     }
-  }, [isLoggedIn, userRole, loading, router]);
+  }, [isLoggedIn, loading, router]);
 
   const handleLogout = async () => {
     localStorage.removeItem("mock_user");
@@ -77,10 +76,10 @@ export default function UserProtectedLayout({
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-[var(--bg-sidebar)] font-dm-sans transition-colors duration-200">
-      
+
       {/* Sidebar Logo */}
       <div className="px-6 py-6 border-b border-[var(--border)] shrink-0">
-        <div 
+        <div
           className="flex flex-col leading-none cursor-pointer"
           onClick={() => { router.push("/user/home"); setMobileMenuOpen(false); }}
         >
@@ -98,16 +97,15 @@ export default function UserProtectedLayout({
             router.push("/user/home");
             setMobileMenuOpen(false);
           }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-            pathname === "/user/home"
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${pathname === "/user/home"
               ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-          }`}
+            }`}
         >
           <FiHome size={15} className={pathname === "/user/home" ? "text-[#1d4ed8]" : "text-gray-400"} />
           Home
         </button>
-        
+
         {/* Parent Category: Pantry Perks */}
         <div className="space-y-1">
           <button
@@ -129,11 +127,10 @@ export default function UserProtectedLayout({
                   router.push("/user/menu");
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
-                  pathname === "/user/menu"
+                className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${pathname === "/user/menu"
                     ? "text-[var(--text-primary)] font-extrabold"
                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-                }`}
+                  }`}
               >
                 <div className={`w-1 h-1 rounded-full ${pathname === "/user/menu" ? "bg-[#1d4ed8] scale-125" : "bg-gray-300"}`} />
                 Browse Menu
@@ -159,11 +156,10 @@ export default function UserProtectedLayout({
                   router.push("/user/orders");
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
-                  pathname === "/user/orders"
+                className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${pathname === "/user/orders"
                     ? "text-[var(--text-primary)] font-extrabold"
                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-                }`}
+                  }`}
               >
                 <div className={`w-1 h-1 rounded-full ${pathname === "/user/orders" ? "bg-[#1d4ed8] scale-125" : "bg-gray-300"}`} />
                 Order History
@@ -178,11 +174,10 @@ export default function UserProtectedLayout({
             router.push("/user/leaves");
             setMobileMenuOpen(false);
           }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-            pathname === "/user/leaves"
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${pathname === "/user/leaves"
               ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-          }`}
+            }`}
         >
           <FiCalendar size={15} className={pathname === "/user/leaves" ? "text-[#1d4ed8]" : "text-gray-400"} />
           Leave Directory
@@ -194,11 +189,10 @@ export default function UserProtectedLayout({
             router.push("/user/tasks");
             setMobileMenuOpen(false);
           }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-            pathname === "/user/tasks"
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${pathname === "/user/tasks"
               ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-          }`}
+            }`}
         >
           <FiBriefcase size={15} className={pathname === "/user/tasks" ? "text-[#1d4ed8]" : "text-gray-400"} />
           Jira Taskboard
@@ -210,15 +204,28 @@ export default function UserProtectedLayout({
             router.push("/user/timesheet");
             setMobileMenuOpen(false);
           }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-            pathname === "/user/timesheet"
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${pathname === "/user/timesheet"
               ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-          }`}
+            }`}
         >
           <FiClock size={15} className={pathname === "/user/timesheet" ? "text-[#1d4ed8]" : "text-gray-400"} />
           Timesheet Logs
         </button>
+
+        {/* Administrative Link (Only visible to admin-tier roles) */}
+        {userRole && ["super_admin", "payroll_admin", "manager", "hr"].includes(userRole) && (
+          <button
+            onClick={() => {
+              router.push("/admin/dashboard");
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-blue-600 bg-blue-50/50 hover:bg-blue-100/60 dark:text-blue-400 dark:bg-blue-950/20 dark:hover:bg-blue-900/30 transition-all border border-blue-100/30 dark:border-blue-900/20 shadow-sm mt-4 animate-fadeIn"
+          >
+            <FiShield size={15} className="text-[#1d4ed8]" />
+            Go to Admin Panel
+          </button>
+        )}
       </nav>
 
       {/* Bottom Profile Details & Logout */}
@@ -247,7 +254,7 @@ export default function UserProtectedLayout({
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "var(--bg-base)" }}>
-      
+
       {/* Left Sidebar - Desktop only */}
       <aside className="hidden md:flex flex-col w-60 border-r border-[var(--border)] fixed h-full z-20 shrink-0" style={{ backgroundColor: "var(--bg-sidebar)" }}>
         {SidebarContent()}
@@ -255,7 +262,7 @@ export default function UserProtectedLayout({
 
       {/* Main Workspace Frame */}
       <div className="flex-1 md:pl-60 flex flex-col min-w-0">
-        
+
         {/* Desktop sticky topbar */}
         <header className="hidden md:flex items-center justify-between px-6 py-3.5 border-b border-[var(--border)] sticky top-0 z-20 shrink-0 font-dm-sans transition-colors" style={{ backgroundColor: "var(--bg-header)" }}>
           <p className="text-xs font-semibold text-[var(--text-muted)] capitalize">
@@ -279,7 +286,7 @@ export default function UserProtectedLayout({
 
         {/* Mobile Top Header (hidden on desktop) */}
         <header className="md:hidden flex items-center justify-between px-5 py-4 border-b border-[var(--border)] sticky top-0 z-20 shrink-0 font-dm-sans transition-colors" style={{ backgroundColor: "var(--bg-header)" }}>
-          <div 
+          <div
             className="flex flex-col leading-none cursor-pointer"
             onClick={() => router.push("/user/home")}
           >
@@ -322,13 +329,13 @@ export default function UserProtectedLayout({
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 md:hidden flex">
             {/* Backdrop */}
-            <div 
+            <div
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}
             />
             {/* Slide-out Panel */}
             <div className="relative w-64 h-full shadow-2xl flex flex-col z-10 animate-slideLeft" style={{ backgroundColor: "var(--bg-sidebar)" }}>
-              <button 
+              <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="absolute right-4 top-5 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"
               >

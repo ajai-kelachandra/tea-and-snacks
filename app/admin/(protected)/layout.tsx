@@ -13,14 +13,16 @@ export default function AdminProtectedLayout({
   const router = useRouter();
   const { isLoggedIn, userRole, loading } = useAppSelector((s) => s.auth);
 
+  const isAuthorized = userRole && ["super_admin", "payroll_admin", "manager", "hr"].includes(userRole);
+
   useEffect(() => {
     if (loading) return;
-    if (!isLoggedIn || userRole !== "admin") {
+    if (!isLoggedIn || !isAuthorized) {
       router.replace("/admin/login");
     }
-  }, [isLoggedIn, userRole, loading, router]);
+  }, [isLoggedIn, userRole, loading, router, isAuthorized]);
 
-  if (loading || !isLoggedIn || userRole !== "admin") {
+  if (loading || !isLoggedIn || !isAuthorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3">

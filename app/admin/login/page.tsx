@@ -19,11 +19,13 @@ export default function AdminLoginPage() {
           {/* Header */}
           <div className="bg-[#1d4ed8] px-8 py-8 text-white text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <FiCoffee size={28} />
-              </div>
+              <img 
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQq9ch8YURqsoDkWExMc-87FnWR3QSbqm4qbQ&s" 
+                alt="IRO PEOPLE" 
+                className="h-16 object-contain drop-shadow-md" 
+              />
             </div>
-            <h1 className="text-2xl font-bold">Tea & Snacks</h1>
+            <h1 className="text-2xl font-bold mt-2">Admin Portal</h1>
             <div className="flex items-center justify-center gap-1.5 mt-1 text-blue-200">
               <FiUsers size={13} />
               <p className="text-sm">Admin / IRO People Portal</p>

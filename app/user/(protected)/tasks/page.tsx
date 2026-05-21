@@ -30,6 +30,7 @@ import {
   FiMoreVertical
 } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
 
 interface Employee {
   id: string;
@@ -81,6 +82,7 @@ export default function JiraTasksPage() {
 
   // Dropdown states for 3-dot popover menu
   const [activeDropdownTaskId, setActiveDropdownTaskId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<"dashboard" | "tasks">("dashboard");
 
   // Close task dropdowns when clicking anywhere outside
   useEffect(() => {
@@ -310,26 +312,26 @@ export default function JiraTasksPage() {
       </div>
 
       {/* Jira Kanban Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 border border-gray-100 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] p-4 border border-[var(--border)] rounded-2xl shadow-sm">
         <div className="relative flex-1 max-w-sm">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={14} />
           <input
             type="text"
             placeholder="Search tasks or assignee…"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2 text-xs border border-[var(--border)] bg-transparent text-[var(--text-primary)] rounded-xl focus:outline-none focus:border-blue-500 transition-colors placeholder:text-[var(--text-muted)]"
           />
         </div>
         {/* Project Selection Dropdown */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider select-none">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider select-none">
             Project:
           </span>
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="pl-3 pr-8 py-2 text-xs font-bold border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-blue-500 cursor-pointer appearance-none relative text-gray-800 shadow-sm"
+            className="pl-3 pr-8 py-2 text-xs font-bold border border-[var(--border)] rounded-xl bg-[var(--bg-hover)] focus:outline-none focus:border-blue-500 cursor-pointer appearance-none relative text-[var(--text-primary)] shadow-sm"
             style={{ 
               backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`, 
               backgroundRepeat: "no-repeat", 
@@ -346,7 +348,72 @@ export default function JiraTasksPage() {
         </div>
       </div>
 
+      {/* Submenu Toggles */}
+      <div className="flex items-center gap-2 border-b border-[var(--border)] pb-0 mt-4 mb-2">
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className={`px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 transition-all ${
+            activeView === "dashboard" ? "border-[#1d4ed8] text-[#1d4ed8] bg-[#1d4ed8]/10" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+          }`}
+        >
+          Dashboard Analytics
+        </button>
+        <button
+          onClick={() => setActiveView("tasks")}
+          className={`px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 transition-all ${
+            activeView === "tasks" ? "border-[#1d4ed8] text-[#1d4ed8] bg-[#1d4ed8]/10" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+          }`}
+        >
+          Task Board
+        </button>
+      </div>
+
+      {activeView === "dashboard" && (
+        <div className="bg-[var(--bg-card)] rounded-2xl p-6 border border-[var(--border)] shadow-sm animate-fadeIn">
+          <h2 className="text-sm font-bold text-[var(--text-primary)] mb-6">Task Distribution</h2>
+          <div className="h-80 w-full flex items-center justify-center">
+            {tasks.filter(t => (t.project || "Software Engineering") === selectedProject).length === 0 ? (
+              <p className="text-sm text-[var(--text-muted)] font-medium">No tasks found for this project.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "To Do", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "todo").length, color: "#64748b" },
+                      { name: "In Progress", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_progress").length, color: "#3b82f6" },
+                      { name: "In Review", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_review").length, color: "#f59e0b" },
+                      { name: "Done", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "done").length, color: "#10b981" }
+                    ].filter(d => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: "To Do", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "todo").length, color: "#64748b" },
+                      { name: "In Progress", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_progress").length, color: "#3b82f6" },
+                      { name: "In Review", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_review").length, color: "#f59e0b" },
+                      { name: "Done", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "done").length, color: "#10b981" }
+                    ].filter(d => d.value > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Kanban Board Grid */}
+      {activeView === "tasks" && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
         {/* Columns Mapping */}
         {(
@@ -501,6 +568,7 @@ export default function JiraTasksPage() {
           );
         })}
       </div>
+      )}
 
 
     </div>

@@ -11,7 +11,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="flex flex-col leading-none uppercase">
-              <span className="text-xl font-black text-black tracking-tighter uppercase">IRO</span>
+              <span className="text-xl font-black dark:text-white text-black tracking-tighter uppercase">IRO</span>
               <span className="text-[10px] font-black text-[#1d4ed8] tracking-[0.3em] ml-0.5 uppercase">PEOPLE</span>
             </div>
             <div className="w-[1px] h-4 bg-gray-200" />
@@ -29,7 +29,7 @@ export default function Footer() {
 
         {/* Unofficial Banner */}
         <div className="bg-gray-50 rounded-2xl p-6 text-[11px] text-gray-500 leading-relaxed border border-gray-100">
-          <span className="font-black text-gray-700 mr-1">Internal.</span> 
+          <span className="font-black text-gray-700 mr-1">Internal.</span>
           This is an internal office application for tracking corporate attendance, leave calendars, daily timesheets, and pantry snacks.
           A community project for efficient office management.
         </div>
@@ -48,7 +48,7 @@ export default function Footer() {
         {/* Credits */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-4 pt-4 text-xs font-bold">
           <span className="text-gray-400">Built by <span className="text-black">Ajai kc</span></span>
-          
+
           <a href="#" className="flex items-center gap-2 text-gray-400 hover:text-black transition-colors">
             <FiInstagram size={14} className="text-black" />
             <span>ajai_kc</span>

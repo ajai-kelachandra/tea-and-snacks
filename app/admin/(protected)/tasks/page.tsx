@@ -28,6 +28,8 @@ import {
   FiFolder,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { useAppSelector } from "@/lib/hooks";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
 
 interface Employee {
   id: string;
@@ -58,6 +60,13 @@ interface Project {
 }
 
 export default function AdminTasksPage() {
+  const { userRole } = useAppSelector((s) => s.auth);
+
+  const isSuperAdmin = userRole === "super_admin";
+  const isManager = userRole === "manager";
+  const canManageTasks = isSuperAdmin || isManager;
+  const canManageProjects = isSuperAdmin;
+
   const [employeesList, setEmployeesList] = useState<Employee[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,6 +95,7 @@ export default function AdminTasksPage() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeView, setActiveView] = useState<"dashboard" | "tasks">("dashboard");
 
   // Drag states for columns
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
@@ -158,11 +168,16 @@ export default function AdminTasksPage() {
 
   // Drag and Drop
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    if (!canManageTasks) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData("text/plain", taskId);
     e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragOver = (e: React.DragEvent, colKey: string) => {
+    if (!canManageTasks) return;
     e.preventDefault();
     setDragOverColumn(colKey);
   };
@@ -174,6 +189,10 @@ export default function AdminTasksPage() {
   const handleDrop = async (e: React.DragEvent, targetStatus: "todo" | "in_progress" | "in_review" | "done") => {
     e.preventDefault();
     setDragOverColumn(null);
+    if (!canManageTasks) {
+      toast.error("Access Restricted: Your role does not allow status modifications.");
+      return;
+    }
     const taskId = e.dataTransfer.getData("text/plain");
     if (!taskId) return;
 
@@ -187,6 +206,10 @@ export default function AdminTasksPage() {
   };
 
   const moveTask = async (taskId: string, currentStatus: string, direction: "prev" | "next") => {
+    if (!canManageTasks) {
+      toast.error("Access Restricted: Your role does not allow status modifications.");
+      return;
+    }
     const statusOrder: ("todo" | "in_progress" | "in_review" | "done")[] = [
       "todo",
       "in_progress",
@@ -214,6 +237,10 @@ export default function AdminTasksPage() {
   };
 
   const changeTaskStatus = async (taskId: string, newStatus: "todo" | "in_progress" | "in_review" | "done") => {
+    if (!canManageTasks) {
+      toast.error("Access Restricted: Your role does not allow status modifications.");
+      return;
+    }
     try {
       await updateDoc(doc(db, "tasks", taskId), { status: newStatus });
       toast.success(`Task status changed to ${newStatus.toUpperCase().replace("_", " ")}`);
@@ -225,6 +252,10 @@ export default function AdminTasksPage() {
 
   // ── Project CRUD handlers ──────────────────────────────────────
   const handleAddProject = async () => {
+    if (!canManageProjects) {
+      toast.error("Access Restricted: Only Super Admins can manage projects.");
+      return;
+    }
     const name = newProjectName.trim();
     if (!name) return;
     try {
@@ -238,12 +269,20 @@ export default function AdminTasksPage() {
   };
 
   const handleStartEdit = (project: Project) => {
+    if (!canManageProjects) {
+      toast.error("Access Restricted: Only Super Admins can rename projects.");
+      return;
+    }
     setEditingProjectId(project.id);
     setEditingProjectName(project.name);
     setTimeout(() => editInputRef.current?.focus(), 50);
   };
 
   const handleSaveProjectName = async (project: Project) => {
+    if (!canManageProjects) {
+      toast.error("Access Restricted: Only Super Admins can rename projects.");
+      return;
+    }
     const name = editingProjectName.trim();
     if (!name || name === project.name) {
       setEditingProjectId(null);
@@ -262,6 +301,10 @@ export default function AdminTasksPage() {
   };
 
   const handleDeleteProject = async (project: Project) => {
+    if (!canManageProjects) {
+      toast.error("Access Restricted: Only Super Admins can delete projects.");
+      return;
+    }
     if (!confirm(`Delete project "${project.name}"? Tasks won't be deleted.`)) return;
     try {
       await deleteDoc(doc(db, "projects", project.id));
@@ -272,6 +315,10 @@ export default function AdminTasksPage() {
   };
 
   const deleteTask = async (taskId: string) => {
+    if (!canManageTasks) {
+      toast.error("Access Restricted: Your role does not allow task deletion.");
+      return;
+    }
     if (!confirm("Are you sure you want to delete this task?")) return;
     try {
       await deleteDoc(doc(db, "tasks", taskId));
@@ -284,6 +331,10 @@ export default function AdminTasksPage() {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManageTasks) {
+      toast.error("Access Restricted: Your role does not allow task creation.");
+      return;
+    }
     if (!newTaskTitle.trim()) return;
 
     // Find assignee details
@@ -341,10 +392,18 @@ export default function AdminTasksPage() {
         <div>
           <h1 className="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
             <FiList className="text-[#1d4ed8]" />
-            <span>Jira Workspace Board (Admin Mode)</span>
+            <span>Jira Workspace Board</span>
+            {!canManageTasks && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30">
+                🔒 Read-Only Mode
+              </span>
+            )}
           </h1>
           <p className="text-xs text-gray-400 mt-1">
-            Create tasks, delegate them to employees, and monitor active project statuses in real-time. Drag and drop cards to change status!
+            {canManageTasks
+              ? "Create tasks, delegate them to employees, and monitor active project statuses in real-time. Drag and drop cards to change status!"
+              : "View active tasks, delegate assignees, and active project workspace statuses. Administrative write-access is restricted based on your role."
+            }
           </p>
         </div>
       </div>
@@ -358,17 +417,19 @@ export default function AdminTasksPage() {
             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Projects</span>
             <span className="text-[9px] font-black bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full">{projects.length}</span>
           </div>
-          <button
-            onClick={() => setShowAddProject((v) => !v)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black bg-[#1d4ed8] text-white hover:bg-blue-700 transition-all active:scale-95"
-          >
-            <FiPlus size={11} />
-            New Project
-          </button>
+          {canManageProjects && (
+            <button
+              onClick={() => setShowAddProject((v) => !v)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black bg-[#1d4ed8] text-white hover:bg-blue-700 transition-all active:scale-95 animate-fadeIn"
+            >
+              <FiPlus size={11} />
+              New Project
+            </button>
+          )}
         </div>
 
         {/* Add project inline input */}
-        {showAddProject && (
+        {showAddProject && canManageProjects && (
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 bg-blue-50/40">
             <FiFolder size={12} className="text-blue-400 shrink-0" />
             <input
@@ -391,7 +452,7 @@ export default function AdminTasksPage() {
 
         {/* Project list */}
         {projects.length === 0 ? (
-          <p className="text-center text-xs text-gray-400 py-6 font-medium">No projects yet. Create one above.</p>
+          <p className="text-center text-xs text-gray-400 py-6 font-medium">No projects yet.</p>
         ) : (
           <div className="divide-y divide-gray-50">
             {projects.map((project) => (
@@ -427,28 +488,30 @@ export default function AdminTasksPage() {
                   </span>
                 )}
 
-                {/* Action buttons — only visible on hover / when editing */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                  {editingProjectId === project.id ? (
-                    <>
-                      <button onClick={() => handleSaveProjectName(project)} className="p-1 rounded text-green-600 hover:bg-green-50 transition-colors" title="Save">
-                        <FiCheck size={12} />
-                      </button>
-                      <button onClick={() => setEditingProjectId(null)} className="p-1 rounded text-gray-400 hover:bg-gray-100 transition-colors" title="Cancel">
-                        <FiX size={12} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => handleStartEdit(project)} className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Rename">
-                        <FiEdit2 size={12} />
-                      </button>
-                      <button onClick={() => handleDeleteProject(project)} className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Delete">
-                        <FiTrash2 size={12} />
-                      </button>
-                    </>
-                  )}
-                </div>
+                {/* Action buttons — only visible on hover / when editing if super_admin */}
+                {canManageProjects && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    {editingProjectId === project.id ? (
+                      <>
+                        <button onClick={() => handleSaveProjectName(project)} className="p-1 rounded text-green-600 hover:bg-green-50 transition-colors" title="Save">
+                          <FiCheck size={12} />
+                        </button>
+                        <button onClick={() => setEditingProjectId(null)} className="p-1 rounded text-gray-400 hover:bg-gray-100 transition-colors" title="Cancel">
+                          <FiX size={12} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => handleStartEdit(project)} className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Rename">
+                          <FiEdit2 size={12} />
+                        </button>
+                        <button onClick={() => handleDeleteProject(project)} className="p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Delete">
+                          <FiTrash2 size={12} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -456,33 +519,100 @@ export default function AdminTasksPage() {
       </div>
 
       {/* Kanban controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 border border-gray-100 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] p-4 border border-[var(--border)] rounded-2xl shadow-sm">
         <div className="relative flex-1 max-w-sm">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={14} />
           <input
             type="text"
             placeholder="Search active tasks or assignee name…"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2 text-xs border border-[var(--border)] bg-transparent text-[var(--text-primary)] rounded-xl focus:outline-none focus:border-blue-500 transition-colors placeholder:text-[var(--text-muted)]"
           />
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+          <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
             📂 {selectedProject || "No project selected"}
           </span>
-          <button
-            onClick={() => setShowNewTaskModal(true)}
-            disabled={!selectedProject}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#1d4ed8] text-white hover:bg-blue-700 text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all active:scale-[0.98] shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FiPlus size={14} />
-            <span>Add Task to To-Do</span>
-          </button>
+          {canManageTasks && (
+            <button
+              onClick={() => setShowNewTaskModal(true)}
+              disabled={!selectedProject}
+              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#1d4ed8] text-white hover:bg-blue-700 text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all active:scale-[0.98] shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FiPlus size={14} />
+              <span>Add Task to To-Do</span>
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Submenu Toggles */}
+      <div className="flex items-center gap-2 border-b border-[var(--border)] pb-0 mt-4 mb-2">
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className={`px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 transition-all ${
+            activeView === "dashboard" ? "border-[#1d4ed8] text-[#1d4ed8] bg-[#1d4ed8]/10" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+          }`}
+        >
+          Dashboard Analytics
+        </button>
+        <button
+          onClick={() => setActiveView("tasks")}
+          className={`px-4 py-2.5 text-xs font-bold rounded-t-xl border-b-2 transition-all ${
+            activeView === "tasks" ? "border-[#1d4ed8] text-[#1d4ed8] bg-[#1d4ed8]/10" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+          }`}
+        >
+          Task Board
+        </button>
+      </div>
+
+      {activeView === "dashboard" && (
+        <div className="bg-[var(--bg-card)] rounded-2xl p-6 border border-[var(--border)] shadow-sm animate-fadeIn">
+          <h2 className="text-sm font-bold text-[var(--text-primary)] mb-6">Task Distribution</h2>
+          <div className="h-80 w-full flex items-center justify-center">
+            {tasks.filter(t => (t.project || "Software Engineering") === selectedProject).length === 0 ? (
+              <p className="text-sm text-[var(--text-muted)] font-medium">No tasks found for this project.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "To Do", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "todo").length, color: "#64748b" },
+                      { name: "In Progress", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_progress").length, color: "#3b82f6" },
+                      { name: "In Review", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_review").length, color: "#f59e0b" },
+                      { name: "Done", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "done").length, color: "#10b981" }
+                    ].filter(d => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: "To Do", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "todo").length, color: "#64748b" },
+                      { name: "In Progress", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_progress").length, color: "#3b82f6" },
+                      { name: "In Review", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "in_review").length, color: "#f59e0b" },
+                      { name: "Done", value: tasks.filter(t => (t.project || "Software Engineering") === selectedProject && t.status === "done").length, color: "#10b981" }
+                    ].filter(d => d.value > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Kanban Grid */}
+      {activeView === "tasks" && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
         {(
           [
@@ -538,79 +668,85 @@ export default function AdminTasksPage() {
                   colTasks.map(task => (
                     <div
                       key={task.id}
-                      draggable={true}
+                      draggable={canManageTasks}
                       onDragStart={(e) => handleDragStart(e, task.id)}
-                      className="bg-white border border-gray-150 rounded-xl p-3.5 shadow-sm space-y-3 hover:border-blue-400 transition-all cursor-grab active:cursor-grabbing relative group select-none hover:shadow"
+                      className={`bg-white border border-gray-150 rounded-xl p-3.5 shadow-sm space-y-3 relative group select-none hover:shadow ${
+                        canManageTasks ? "hover:border-blue-400 cursor-grab active:cursor-grabbing" : "cursor-default"
+                      }`}
                     >
                       {/* Title & 3-Dot Status trigger */}
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-bold text-gray-900 leading-snug group-hover:text-[#1d4ed8] transition-colors pr-2">
+                        <h4 className={`text-xs font-bold text-gray-900 leading-snug transition-colors pr-2 ${
+                          canManageTasks ? "group-hover:text-[#1d4ed8]" : ""
+                        }`}>
                           {task.title}
                         </h4>
                         
-                        <div className="relative shrink-0">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveDropdownTaskId(prev => (prev === task.id ? null : task.id));
-                            }}
-                            className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors shrink-0 flex items-center justify-center border border-transparent hover:border-gray-150 active:scale-95"
-                            title="Task status actions"
-                          >
-                            <FiMoreVertical size={14} />
-                          </button>
-
-                          {activeDropdownTaskId === task.id && (
-                            <div 
-                              onClick={(e) => e.stopPropagation()}
-                              className="absolute top-full right-0 mt-1 z-35 bg-white border border-gray-150 rounded-xl shadow-xl p-1 min-w-[130px] flex flex-col space-y-0.5 animate-fadeIn"
+                        {canManageTasks && (
+                          <div className="relative shrink-0">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownTaskId(prev => (prev === task.id ? null : task.id));
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-900 transition-colors shrink-0 flex items-center justify-center border border-transparent hover:border-gray-150 active:scale-95"
+                              title="Task status actions"
                             >
-                              <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2.5 py-1 select-none border-b border-gray-50 pb-1 mb-1">
-                                Move Task To:
-                              </div>
-                              {(
-                                [
-                                  { key: "todo", label: "To Do" },
-                                  { key: "in_progress", label: "In Progress" },
-                                  { key: "in_review", label: "In Review" },
-                                  { key: "done", label: "Done" }
-                                ] as const
-                              ).map((statusOption) => {
-                                const isActive = task.status === statusOption.key;
-                                return (
-                                  <button
-                                    key={statusOption.key}
-                                    onClick={() => {
-                                      changeTaskStatus(task.id, statusOption.key);
-                                      setActiveDropdownTaskId(null);
-                                    }}
-                                    className={`w-full text-left px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center justify-between ${
-                                      isActive 
-                                        ? "bg-blue-50 text-blue-700" 
-                                        : "text-gray-655 hover:bg-gray-50 hover:text-gray-900"
-                                    }`}
-                                  >
-                                    <span>{statusOption.label}</span>
-                                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
-                                  </button>
-                                );
-                              })}
+                              <FiMoreVertical size={14} />
+                            </button>
 
-                              {/* Admin delete action nested cleanly in popup */}
-                              <div className="border-t border-gray-100 my-1 pt-1" />
-                              <button
-                                onClick={() => {
-                                  deleteTask(task.id);
-                                  setActiveDropdownTaskId(null);
-                                }}
-                                className="w-full text-left px-2.5 py-1.5 text-[10px] font-bold rounded-lg text-red-650 hover:bg-red-50 transition-colors flex items-center gap-1.5"
+                            {activeDropdownTaskId === task.id && (
+                              <div 
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute top-full right-0 mt-1 z-35 bg-white border border-gray-150 rounded-xl shadow-xl p-1 min-w-[130px] flex flex-col space-y-0.5 animate-fadeIn"
                               >
-                                <FiTrash2 size={11} className="text-red-550" />
-                                <span>Delete Task</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                                <div className="text-[8px] font-black text-gray-400 uppercase tracking-widest px-2.5 py-1 select-none border-b border-gray-50 pb-1 mb-1">
+                                  Move Task To:
+                                </div>
+                                {(
+                                  [
+                                    { key: "todo", label: "To Do" },
+                                    { key: "in_progress", label: "In Progress" },
+                                    { key: "in_review", label: "In Review" },
+                                    { key: "done", label: "Done" }
+                                  ] as const
+                                ).map((statusOption) => {
+                                  const isActive = task.status === statusOption.key;
+                                  return (
+                                    <button
+                                      key={statusOption.key}
+                                      onClick={() => {
+                                        changeTaskStatus(task.id, statusOption.key);
+                                        setActiveDropdownTaskId(null);
+                                      }}
+                                      className={`w-full text-left px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center justify-between ${
+                                        isActive 
+                                          ? "bg-blue-50 text-blue-700" 
+                                          : "text-gray-655 hover:bg-gray-50 hover:text-gray-900"
+                                      }`}
+                                    >
+                                      <span>{statusOption.label}</span>
+                                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Admin delete action nested cleanly in popup */}
+                                <div className="border-t border-gray-100 my-1 pt-1" />
+                                <button
+                                  onClick={() => {
+                                    deleteTask(task.id);
+                                    setActiveDropdownTaskId(null);
+                                  }}
+                                  className="w-full text-left px-2.5 py-1.5 text-[10px] font-bold rounded-lg text-red-650 hover:bg-red-50 transition-colors flex items-center gap-1.5"
+                                >
+                                  <FiTrash2 size={11} className="text-red-550" />
+                                  <span>Delete Task</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {task.description && (
@@ -646,6 +782,7 @@ export default function AdminTasksPage() {
           );
         })}
       </div>
+      )}
 
       {/* Creation Modal */}
       {showNewTaskModal && (

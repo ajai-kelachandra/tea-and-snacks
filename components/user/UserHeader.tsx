@@ -30,11 +30,14 @@ export default function UserHeader() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4 font-bricolage">
           {/* Logo Section */}
           <div 
-            className="flex flex-col leading-none cursor-pointer group" 
+            className="flex items-center cursor-pointer group" 
             onClick={() => router.push("/user/menu")}
           >
-            <span className="text-xl font-black text-black tracking-tighter uppercase">IRO</span>
-            <span className="text-[10px] font-black text-[#1d4ed8] tracking-[0.3em] ml-0.5 uppercase">PEOPLE</span>
+            <img 
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQq9ch8YURqsoDkWExMc-87FnWR3QSbqm4qbQ&s" 
+              alt="IRO PEOPLE" 
+              className="h-8 object-contain" 
+            />
           </div>
 
           {/* Stepper-style Navigation */}

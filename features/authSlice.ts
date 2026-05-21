@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export type UserRole = "admin" | "user" | null;
+export type UserRole = "super_admin" | "payroll_admin" | "manager" | "hr" | "employee" | null;
 
 interface AuthState {
   isLoggedIn: boolean;

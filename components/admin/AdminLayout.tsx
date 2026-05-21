@@ -112,7 +112,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </div>
               {teaSnackOpen ? <FiChevronUp size={12} className="text-gray-400" /> : <FiChevronDown size={12} className="text-gray-400" />}
             </button>
-            
+
             {teaSnackOpen && (
               <div className="space-y-1 pl-1.5 animate-fadeIn">
                 {navLinks.map(({ href, label, icon: Icon }) => {

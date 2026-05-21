@@ -194,71 +194,71 @@ export default function TimesheetPage() {
   const avgHours = totalLoggedHours / (totalDays || 1);
 
   return (
-    <div className="space-y-6 font-dm-sans text-gray-800 animate-fadeIn">
+    <div className="space-y-6 font-dm-sans text-[var(--text-primary)] animate-fadeIn">
       
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
           <FiClock className="text-[#1d4ed8]" />
           Timesheet Logs
         </h1>
-        <p className="text-xs text-gray-500 mt-0.5">Log daily project activities and track weekly workspace hours.</p>
+        <p className="text-xs text-[var(--text-muted)] mt-0.5">Log daily project activities and track weekly workspace hours.</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-2xl p-4">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Total Hours Logged</span>
-          <p className="text-2xl font-black text-gray-950 mt-1">{totalLoggedHours.toFixed(1)}</p>
-          <span className="text-[9px] text-gray-400 font-medium block mt-0.5">Accumulated hours</span>
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wide">Total Hours Logged</span>
+          <p className="text-2xl font-black text-[var(--text-primary)] mt-1">{totalLoggedHours.toFixed(1)}</p>
+          <span className="text-[9px] text-[var(--text-muted)] font-medium block mt-0.5">Accumulated hours</span>
         </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Days Logged</span>
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wide">Days Logged</span>
           <p className="text-2xl font-black text-emerald-600 mt-1">{totalDays}</p>
-          <span className="text-[9px] text-gray-400 font-medium block mt-0.5">Unique working days</span>
+          <span className="text-[9px] text-[var(--text-muted)] font-medium block mt-0.5">Unique working days</span>
         </div>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Average Hours / Day</span>
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wide">Average Hours / Day</span>
           <p className="text-2xl font-black text-[#1d4ed8] mt-1">{avgHours.toFixed(1)}</p>
-          <span className="text-[9px] text-gray-400 font-medium block mt-0.5">Average logged active hours</span>
+          <span className="text-[9px] text-[var(--text-muted)] font-medium block mt-0.5">Average logged active hours</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* Log Hours Form Panel */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2 border-b border-[var(--border)] pb-3">
             <FiPlus className="text-[#1d4ed8]" size={16} />
-            <h2 className="text-sm font-bold text-gray-950">Log Daily Hours</h2>
+            <h2 className="text-sm font-bold text-[var(--text-primary)]">Log Daily Hours</h2>
           </div>
 
           <form onSubmit={handleSubmitHours} className="space-y-4">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Date</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Date</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent"
+                className="w-full bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent [color-scheme:light_dark]"
                 required
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Project / Task</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Project / Task</label>
               <input
                 type="text"
                 placeholder="e.g. Software Engineering"
                 value={project}
                 onChange={(e) => setProject(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent placeholder-gray-400"
+                className="w-full bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent placeholder:text-gray-400"
                 required
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Hours Logged</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Hours Logged</label>
               <input
                 type="number"
                 min="0.5"
@@ -266,19 +266,19 @@ export default function TimesheetPage() {
                 step="0.5"
                 value={hours}
                 onChange={(e) => setHours(parseFloat(e.target.value) || 0)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent"
+                className="w-full bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent"
                 required
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">Activity Description</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Activity Description</label>
               <textarea
                 rows={3}
                 placeholder="Brief summary of tasks accomplished..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent placeholder-gray-400 resize-none"
+                className="w-full bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent placeholder:text-gray-400 resize-none"
                 required
               />
             </div>
@@ -299,36 +299,36 @@ export default function TimesheetPage() {
 
         {/* Timesheet Registry Log */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-5">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-4">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-5">
+            <div className="flex items-center gap-2 border-b border-[var(--border)] pb-3 mb-4">
               <FiBriefcase className="text-[#1d4ed8]" size={16} />
-              <h2 className="text-sm font-bold text-gray-950">Activity Registry</h2>
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">Activity Registry</h2>
             </div>
 
             {loading ? (
               <div className="space-y-3 py-4">
                 {[1, 2].map((i) => (
-                  <div key={i} className="h-16 bg-gray-50 border border-gray-200 rounded-xl animate-pulse" />
+                  <div key={i} className="h-16 bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : entries.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-[var(--text-muted)]">
                 <FiAlertCircle size={28} className="mx-auto mb-2 opacity-30" />
                 <p className="text-xs font-bold">No hours logged yet</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">Your timesheet registry is currently empty.</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Your timesheet registry is currently empty.</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                 {entries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="p-4 bg-gray-50/50 border border-gray-200 rounded-2xl flex items-start justify-between gap-4"
+                    className="p-4 bg-[var(--bg-hover)] border border-[var(--border)] rounded-2xl flex items-start justify-between gap-4"
                   >
                     <div className="space-y-1.5 min-w-0">
                       <div className="flex items-center flex-wrap gap-2">
-                        <span className="text-xs font-bold text-gray-950">{entry.project}</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <span className="text-xs font-bold text-[var(--text-primary)]">{entry.project}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--border)]" />
+                        <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider flex items-center gap-1">
                           <FiCalendar size={10} />
                           {new Date(entry.date).toLocaleDateString("en-IN", {
                             day: "2-digit",
@@ -337,19 +337,19 @@ export default function TimesheetPage() {
                           })}
                         </span>
                       </div>
-                      <p className="text-[10px] text-gray-500 font-medium leading-relaxed truncate max-w-lg">
+                      <p className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed truncate max-w-lg">
                         {entry.description}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
-                        <span className="text-xs font-black text-gray-900 block">{entry.hours.toFixed(1)} hrs</span>
+                        <span className="text-xs font-black text-[var(--text-primary)] block">{entry.hours.toFixed(1)} hrs</span>
                       </div>
 
                       <button
                         onClick={() => handleDeleteEntry(entry.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50/50 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50/10 rounded-lg transition-colors cursor-pointer"
                         title="Revoke entry"
                       >
                         <FiTrash2 size={13} />

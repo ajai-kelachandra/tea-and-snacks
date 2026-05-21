@@ -24,7 +24,7 @@ export default function AuthObserver({ children }: { children: ReactNode }) {
         let finalName = user.displayName || user.email?.split("@")[0] || "User";
 
         // Default role from env-based admin email list
-        const defaultRole: UserRole = ADMIN_EMAILS.includes((user.email || "").toLowerCase()) ? "admin" : "user";
+        const defaultRole: UserRole = ADMIN_EMAILS.includes((user.email || "").toLowerCase()) ? "super_admin" : "employee";
         let finalRole: UserRole = defaultRole;
 
         try {
@@ -34,9 +34,12 @@ export default function AuthObserver({ children }: { children: ReactNode }) {
           if (userSnap.exists()) {
             const data = userSnap.data();
             finalName = data.name || finalName;
-            // ★ RBAC: honour the role stored in Firestore (admin can promote users)
-            if (data.role === "admin" || data.role === "user") {
-              finalRole = data.role as UserRole;
+            // ★ RBAC: honour the role stored in Firestore
+            const dbRole = data.role;
+            if (["super_admin", "payroll_admin", "manager", "hr", "employee", "admin", "user"].includes(dbRole)) {
+              if (dbRole === "admin") finalRole = "super_admin";
+              else if (dbRole === "user") finalRole = "employee";
+              else finalRole = dbRole as UserRole;
             }
           } else {
             // First login — create user doc with default role
