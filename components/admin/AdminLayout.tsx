@@ -22,6 +22,7 @@ import {
   FiSun,
   FiMoon,
   FiShield,
+  FiMessageSquare,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import Footer from "@/components/Footer";
@@ -198,6 +199,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             >
               <FiShield size={15} />
               <span>Role Management</span>
+            </Link>
+          </div>
+
+          {/* Real-time Messaging Category */}
+          <div className="space-y-1">
+            <Link
+              href="/admin/chat"
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors duration-150
+                ${pathname === "/admin/chat"
+                  ? "bg-[#1d4ed8] text-white shadow-sm"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                }`}
+            >
+              <FiMessageSquare size={15} />
+              <span>Direct Messaging</span>
             </Link>
           </div>
         </nav>

@@ -19,7 +19,8 @@ import {
   FiBriefcase,
   FiSun,
   FiMoon,
-  FiShield
+  FiShield,
+  FiMessageSquare
 } from "react-icons/fi";
 import CartDrawer from "@/components/user/CartDrawer";
 import Footer from "@/components/Footer";
@@ -211,6 +212,21 @@ export default function UserProtectedLayout({
         >
           <FiClock size={15} className={pathname === "/user/timesheet" ? "text-[#1d4ed8]" : "text-gray-400"} />
           Timesheet Logs
+        </button>
+
+        {/* Separate Category: Direct Messaging */}
+        <button
+          onClick={() => {
+            router.push("/user/chat");
+            setMobileMenuOpen(false);
+          }}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${pathname === "/user/chat"
+              ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+            }`}
+        >
+          <FiMessageSquare size={15} className={pathname === "/user/chat" ? "text-[#1d4ed8]" : "text-gray-400"} />
+          Direct Messaging
         </button>
 
         {/* Administrative Link (Only visible to admin-tier roles) */}
